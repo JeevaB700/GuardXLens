@@ -23,6 +23,7 @@ const TakeExam = () => {
     const [allTestResults, setAllTestResults] = useState({}); // Track all Q results
     const [isRunning, setIsRunning] = useState(false);
     const [consoleOpen, setConsoleOpen] = useState(true);
+    const isShowingAlert = useRef(false); // Flag to prevent recursive alerts
 
     useEffect(() => {
         if (exam) document.title = `GuardXLens | ${exam.title}`;
@@ -111,24 +112,31 @@ const TakeExam = () => {
         submitExamData(answersRef.current, true);
     };
 
-    const handleSecurityViolation = useCallback(async (type) => {
+    const safeAlert = (msg) => {
+        isShowingAlert.current = true;
+        alert(msg);
+        // Delay resetting to allow FS event to settle
+        setTimeout(() => { isShowingAlert.current = false; }, 500);
+    };
+
+    const handleSecurityViolation = useCallback(async (type, details = "") => {
         if (showTerminationModal || isSubmitting) return;
 
         // PRE-EXAM MODE: Alert but NO logging, No count increase
         if (!isExamStarted) {
-            alert(`⚠️ PRE-EXAM SECURITY CHECK:\n\n${type} detected.\n\nPlease resolve this issue (close VM or disconnect extra monitors) to proceed with the exam.\n\nNote: This is just a warning. No violation has been recorded yet.`);
+            safeAlert(`⚠️ PRE-EXAM SECURITY CHECK:\n\n${type} detected.\n\n${details}\n\nPlease resolve this issue (close VM or disconnect extra monitors) to proceed with the exam.\n\nNote: This is just a warning. No violation has been recorded yet.`);
             return;
         }
 
         // ACTIVE EXAM MODE: Log violation and increase count
         const newCount = violationCount + 1;
         setViolationCount(newCount);
-        logViolation(type, `Count: ${newCount}`);
+        logViolation(type, details || `Count: ${newCount}`);
 
         if (newCount > MAX_WARNINGS) {
             terminateExam();
         } else {
-            alert(`⚠️ MALPRACTICE WARNING (${newCount}/${MAX_WARNINGS + 1}):\n\n${type} detected!\n\nFurther violations will lead to automatic submission.`);
+            safeAlert(`⚠️ MALPRACTICE WARNING (${newCount}/${MAX_WARNINGS + 1}):\n\n${type} detected!\n\n${details}\n\nFurther violations will lead to automatic submission.`);
         }
     }, [violationCount, showTerminationModal, isSubmitting, id, isExamStarted]);
 
@@ -217,7 +225,11 @@ const TakeExam = () => {
     useEffect(() => {
         const handleBackButton = (event) => {
             event.preventDefault();
-            alert("Navigating away triggers Auto-Submission.");
+            if (!isExamStarted) {
+                navigate('/student/dashboard');
+                return;
+            }
+            safeAlert("Navigating away triggers Auto-Submission.");
             submitExamData(answersRef.current);
         };
         window.history.pushState(null, null, window.location.href);
@@ -226,6 +238,8 @@ const TakeExam = () => {
         const handleVisibility = () => { if (document.hidden) handleSecurityViolation("TAB_SWITCH"); };
 
         const handleFS = () => {
+            if (isShowingAlert.current) return; // Ignore if browser alert caused exit
+            
             if (!document.fullscreenElement && !showTerminationModal) {
                 setIsFullScreen(false);
                 handleSecurityViolation("EXIT_FULL_SCREEN");
