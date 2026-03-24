@@ -9,6 +9,10 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
+  React.useEffect(() => {
+    document.title = "GuardXLens | Login";
+  }, []);
+
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
@@ -41,8 +45,8 @@ const Login = () => {
           {/* Left Side: Brand/Hero */}
           <div className="col-lg-6 d-none d-lg-block">
             <div className="pe-lg-5">
-              <div className="d-inline-flex align-items-center justify-content-center p-3 rounded-pill bg-primary bg-opacity-10 text-primary mb-4 animate-slide-up stagger-1">
-                <ShieldCheck size={48} />
+              <div className="d-inline-flex align-items-center justify-content-center p-2 rounded bg-white bg-opacity-10 mb-4 shadow-lg border border-white border-opacity-10 animate-slide-up stagger-1">
+                <img src="/logo.png" alt="Logo" style={{ width: '64px', height: '64px', objectFit: 'contain' }} />
               </div>
               <h1 className="display-4 fw-bold mb-3 text-white animate-slide-up stagger-2">Welcome Back</h1>
               <p className="lead text-white-50 mb-5 animate-slide-up stagger-3">

@@ -20,8 +20,13 @@ const TakeExam = () => {
     // Coding State
     const [selectedLanguage, setSelectedLanguage] = useState("java");
     const [testResults, setTestResults] = useState(null);
+    const [allTestResults, setAllTestResults] = useState({}); // Track all Q results
     const [isRunning, setIsRunning] = useState(false);
     const [consoleOpen, setConsoleOpen] = useState(true);
+
+    useEffect(() => {
+        if (exam) document.title = `GuardXLens | ${exam.title}`;
+    }, [exam]);
 
     // Security State
     const [isFullScreen, setIsFullScreen] = useState(false);
@@ -85,6 +90,7 @@ const TakeExam = () => {
             await axios.post(`${API_BASE_URL}/api/student/submit`, {
                 examId: id,
                 answers: finalAnswers,
+                codingResults: allTestResults, // PASS TEST RESULTS
                 studentId: user?.id,
                 isMalpractice
             }, { headers: { Authorization: `Bearer ${token}` } });
@@ -379,7 +385,9 @@ const TakeExam = () => {
                 sourceCode: answers[exam.questions[currentQIndex]._id],
                 questionId: exam.questions[currentQIndex]._id
             }, { headers: { Authorization: `Bearer ${token}` } });
+            
             setTestResults(res.data.results);
+            setAllTestResults(prev => ({ ...prev, [exam.questions[currentQIndex]._id]: res.data.results }));
         } catch (e) { alert("Execution Error"); }
         finally { setIsRunning(false); }
     };

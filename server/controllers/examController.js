@@ -204,7 +204,7 @@ const updateExam = async (req, res) => {
 // 7. SUBMIT EXAM
 const submitExam = async (req, res) => {
   try {
-    const { examId, answers, studentId, isMalpractice } = req.body;
+    const { examId, answers, codingResults, studentId, isMalpractice } = req.body;
     const exam = await Exam.findById(examId);
 
     let totalScore = 0;
@@ -227,7 +227,22 @@ const submitExam = async (req, res) => {
             correct = true;
           }
         }
-        if ((q.type === 'CODE' || q.type === 'SHORT') && ans && ans.length > 0) correct = true;
+        
+        if (q.type === 'SHORT' && ans && ans.length > 0) {
+          correct = true;
+        }
+
+        if (q.type === 'CODE') {
+          // Check if there are results for this coding question
+          const results = codingResults ? codingResults[q._id.toString()] : null;
+          if (results && results.length > 0) {
+            const passedCount = results.filter(r => r.status === 'Passed').length;
+            // Rule: 0 marks if no testcases passed
+            if (passedCount > 0) {
+              correct = true;
+            }
+          }
+        }
 
         if (correct) {
           marks = q.marks;

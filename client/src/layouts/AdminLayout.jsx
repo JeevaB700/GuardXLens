@@ -42,8 +42,8 @@ const AdminLayout = () => {
   const SidebarContent = ({ onNavigate }) => (
     <div className="d-flex flex-column h-100">
       <div className="p-4 border-bottom border-white border-opacity-10 d-flex align-items-center gap-3">
-        <div className="bg-primary bg-opacity-25 p-2 rounded text-primary shadow-sm">
-          <ShieldCheck size={24} />
+        <div className="bg-white bg-opacity-10 p-1 rounded shadow-sm border border-white border-opacity-10">
+          <img src="/logo.png" alt="Logo" style={{ width: '42px', height: '42px', objectFit: 'contain' }} />
         </div>
         <div>
           <h5 className="mb-0 fw-bold text-white">GuardXLens</h5>
@@ -97,7 +97,7 @@ const AdminLayout = () => {
         {/* Mobile Header */}
         <header className="d-lg-none glass-navbar border-bottom border-white border-opacity-10 p-3 d-flex align-items-center justify-content-between">
           <div className="d-flex align-items-center gap-2">
-            <ShieldCheck size={24} className="text-primary" />
+            <img src="/logo.png" alt="Logo" style={{ width: '30px', height: '30px', objectFit: 'contain' }} />
             <span className="fw-bold text-white">GuardXLens</span>
           </div>
           <button className="btn btn-outline-light border-opacity-50 p-1" onClick={() => setShowSidebar(true)}>

@@ -184,9 +184,17 @@ const InstitutionStudents = () => {
                                                 {r.isMalpractice && <span className="badge bg-danger bg-opacity-25 text-danger border border-danger border-opacity-25 mb-1"><ShieldAlert size={10} /> Malpractice</span>}
                                                 <small className="d-block text-white-50"><Clock size={12} /> {new Date(r.submittedAt).toLocaleDateString()}</small>
                                             </div>
-                                            <div className="text-end" style={{ minWidth: '100px' }}>
+                                            <div className="text-end" style={{ minWidth: '150px' }}>
                                                 <h4 className={`fw-bold mb-0 ${r.isMalpractice ? 'text-danger' : isPass ? 'text-success' : 'text-warning'}`}>{percentage}%</h4>
-                                                <small className="text-white-50">{r.score}/{r.totalMarks}</small>
+                                                <div className="d-flex flex-column align-items-end">
+                                                    <small className="text-white-50">{r.score}/{r.totalMarks}</small>
+                                                    <button 
+                                                        onClick={() => navigate(`/institution/result-view/${selectedStudent._id}/${r._id}`)}
+                                                        className="btn btn-link btn-sm p-0 text-primary text-decoration-none mt-1 hover-text-white"
+                                                    >
+                                                        View Answer Sheet
+                                                    </button>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>

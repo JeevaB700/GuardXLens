@@ -25,6 +25,7 @@ import CreateExam from './pages/admin/CreateExam';
 import InstitutionStudents from './pages/Institution/InstitutionStudents';
 import EditExam from './pages/Institution/EditExam';
 import ActiveExams from './pages/Institution/ActiveExams';
+import AdminResultView from './pages/Institution/AdminResultView';
 
 // --- PAGES: STUDENT ---
 import StudentDashboard from './pages/student/StudentDashboard';
@@ -73,6 +74,7 @@ function App() {
                     <Route path="create-exam" element={<CreateExam />} />
                     <Route path="edit-exam/:id" element={<EditExam />} />
                     <Route path="students" element={<InstitutionStudents />} />
+                    <Route path="result-view/:studentId/:resultId" element={<AdminResultView />} />
                     <Route index element={<Navigate to="dashboard" replace />} />
                 </Route>
 

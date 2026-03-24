@@ -12,6 +12,10 @@ const StudentDashboard = () => {
     const navigate = useNavigate();
 
     useEffect(() => {
+        document.title = "GuardXLens | Student Dashboard";
+    }, []);
+
+    useEffect(() => {
         const userStr = sessionStorage.getItem('user');
         const token = sessionStorage.getItem('token');
         if (!userStr || !token) { navigate('/login'); return; }
@@ -61,8 +65,8 @@ const StudentDashboard = () => {
             <nav className="navbar navbar-expand-lg navbar-dark glass-navbar px-4 py-3 sticky-top">
                 <div className="container-fluid">
                     <span className="navbar-brand fw-bold d-flex align-items-center gap-2">
-                        <div className="bg-primary bg-gradient rounded p-1 d-flex align-items-center justify-content-center shadow-lg" style={{ width: '32px', height: '32px' }}>
-                            <span className="text-white fw-bold small">GX</span>
+                        <div className="bg-white bg-opacity-10 rounded p-1 d-flex align-items-center justify-content-center shadow-lg border border-white border-opacity-10" style={{ width: '36px', height: '36px' }}>
+                            <img src="/logo.png" alt="GX" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
                         </div>
                         GuardXLens
                     </span>

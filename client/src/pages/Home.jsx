@@ -5,6 +5,10 @@ import { ShieldCheck, ArrowRight, Lock, Cpu, Eye, CheckCircle } from 'lucide-rea
 const Home = () => {
   const navigate = useNavigate();
 
+  React.useEffect(() => {
+    document.title = "GuardXLens | Secure Proctoring Platform";
+  }, []);
+
   return (
     <div className="d-flex flex-column min-vh-100 bg-dark text-white font-sans">
 
@@ -12,8 +16,8 @@ const Home = () => {
       <nav className="navbar navbar-expand-md navbar-dark bg-dark py-3 border-bottom border-secondary sticky-top">
         <div className="container">
           <div className="d-flex align-items-center gap-2 cursor-pointer" onClick={() => navigate('/')}>
-            <div className="p-2 rounded bg-primary d-flex align-items-center justify-content-center">
-              <ShieldCheck className="text-white" size={24} />
+            <div className="p-1 rounded bg-white bg-opacity-10 shadow-sm border border-white border-opacity-10 d-flex align-items-center justify-content-center">
+              <img src="/logo.png" alt="Logo" style={{ width: '32px', height: '32px', objectFit: 'contain' }} />
             </div>
             <span className="h4 mb-0 fw-bold text-white">GuardXLens</span>
           </div>
