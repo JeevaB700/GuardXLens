@@ -15,9 +15,10 @@ const executeCode = async (req, res) => {
     console.log(`Found ${testCases.length} test cases.`);
 
     const languageMap = {
-      'java': { language: 'java', version: '15.0.2' },
-      'python': { language: 'python', version: '3.10.0' },
-      'c': { language: 'c', version: '10.2.0' },
+      'java': { language: 'java' },
+      'python': { language: 'py' },
+      'c': { language: 'c' },
+      'cpp': { language: 'cpp' },
     };
 
     const config = languageMap[language.toLowerCase()];
@@ -32,37 +33,29 @@ const executeCode = async (req, res) => {
       const input = tc.input || "";
       const expectedOutput = (tc.output || "").trim();
 
-      console.log(`\nTest Case ${index + 1}:`);
-      console.log(`Input: ${JSON.stringify(input)}`);
-      console.log(`Expected: ${JSON.stringify(expectedOutput)}`);
-
       try {
-        const response = await axios.post('https://emkc.org/api/v2/piston/execute', {
+        const response = await axios.post('https://api.codex.jaagrav.in/', {
           language: config.language,
-          version: config.version,
-          files: [{ content: sourceCode }],
-          stdin: input, 
-        }, {
-          headers: { 'User-Agent': 'GuardXLens' }
+          code: sourceCode,
+          input: input,
         });
 
-        // 1. CHECK FOR COMPILATION ERROR
-        if (response.data.compile && response.data.compile.code !== 0) {
-             console.log("❌ Compilation Failed");
-             results.push({
-                caseId: index + 1,
-                status: "Compilation Error",
-                expected: expectedOutput,
-                actual: response.data.compile.stderr || response.data.compile.stdout
-             });
-             continue; 
-        }
-
-        // 2. CHECK RUN OUTPUT
-        const rawOutput = response.data.run.stdout || response.data.run.stderr || "";
-        const actualOutput = rawOutput.trim();
+        // CodeX returns { status: 200, output: "...", error: "...", ... }
+        const actualOutput = (response.data.output || "").trim();
+        const errorOutput = (response.data.error || "").trim();
         
         console.log(`Actual: ${JSON.stringify(actualOutput)}`);
+        if (errorOutput) console.log(`Error: ${JSON.stringify(errorOutput)}`);
+
+        if (errorOutput) {
+            results.push({
+                caseId: index + 1,
+                status: "Runtime Error",
+                expected: expectedOutput,
+                actual: errorOutput
+            });
+            continue;
+        }
 
         const passed = actualOutput === expectedOutput;
 
@@ -74,9 +67,9 @@ const executeCode = async (req, res) => {
         });
 
       } catch (err) {
-        console.error("Piston/Network Error:", err.message);
+        console.error("CodeX/Network Error:", err.message);
         if (err.response) {
-            console.error("Piston Response Error Data:", err.response.data);
+            console.error("CodeX Response Error Data:", err.response.data);
         }
         results.push({ 
             caseId: index + 1, 
