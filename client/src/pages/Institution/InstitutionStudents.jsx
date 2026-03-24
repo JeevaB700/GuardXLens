@@ -45,14 +45,23 @@ const InstitutionStudents = () => {
         fetchData();
     }, [searchParams]);
 
+    const [allStudentLogs, setAllStudentLogs] = useState([]);
+
     const handleStudentClick = async (student) => {
         setSelectedStudent(student);
+        setResults([]);
+        setAllStudentLogs([]);
         try {
             const token = sessionStorage.getItem('token');
-            const res = await axios.get(`${API_BASE_URL}/api/student/results/${student._id}`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            const config = { headers: { Authorization: `Bearer ${token}` } };
+            
+            const [res, logsRes] = await Promise.all([
+                axios.get(`${API_BASE_URL}/api/student/results/${student._id}`, config),
+                axios.get(`${API_BASE_URL}/api/admin/student-logs/${student._id}`, config)
+            ]);
+            
             if (res.data.success) setResults(res.data.results || []);
+            if (logsRes.data.success) setAllStudentLogs(logsRes.data.logs || []);
         } catch (error) { console.error(error); }
     };
 
@@ -191,17 +200,19 @@ const InstitutionStudents = () => {
                                     >
                                         <div className="card-body p-3 d-flex align-items-center justify-content-between">
                                             <div className="d-flex align-items-center gap-3 overflow-hidden">
-                                                <div className={`p-2 rounded bg-${isPass ? 'success' : 'danger'} bg-opacity-10 text-${isPass ? 'success' : 'danger'} border border-${isPass ? 'success' : 'danger'} border-opacity-10 d-flex flex-column align-items-center justify-content-center`} style={{ minWidth: '50px', height: '50px' }}>
+                                                <div className={`p-2 rounded bg-${(r.violationCount > 0 || r.isMalpractice || !isPass) ? 'danger' : 'success'} bg-opacity-10 text-${(r.violationCount > 0 || r.isMalpractice || !isPass) ? 'danger' : 'success'} border border-${(r.violationCount > 0 || r.isMalpractice || !isPass) ? 'danger' : 'success'} border-opacity-10 d-flex flex-column align-items-center justify-content-center`} style={{ minWidth: '50px', height: '50px' }}>
                                                     <span className="fw-bold lh-1">{percentage}%</span>
                                                     <span style={{ fontSize: '0.6rem' }}>Score</span>
                                                 </div>
                                                 <div className="text-truncate">
                                                     <h6 className="fw-bold mb-0 text-white">{r.examId?.title || "Deleted Exam"}</h6>
-                                                    <div className="d-flex align-items-center gap-3 text-white-50" style={{ fontSize: '0.75rem' }}>
-                                                        <span>{new Date(r.submittedAt).toLocaleDateString()}</span>
-                                                        <span className="d-flex align-items-center gap-1"><Terminal size={10} /> {r.examId?.subject || 'CS'}</span>
-                                                        {(r.isMalpractice || (r.violationCount > 0)) && (
-                                                            <span className="text-danger fw-bold d-flex align-items-center gap-1"><ShieldAlert size={10} /> FLAG</span>
+                                                    <div className="d-flex flex-wrap align-items-center gap-x-3 gap-y-1 text-white-50 mt-1" style={{ fontSize: '0.75rem' }}>
+                                                        <span className="d-flex align-items-center gap-1"><Clock size={12} /> {new Date(r.submittedAt).toLocaleDateString()}</span>
+                                                        <span className="d-flex align-items-center gap-1"><Terminal size={12} /> {r.examId?.subject || 'CS'}</span>
+                                                        {(r.violationCount >= 3 || r.isMalpractice) && (
+                                                            <span className="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 py-1 px-2 fw-bold text-uppercase">
+                                                                <ShieldAlert size={12} className="me-1" /> Malpractice
+                                                            </span>
                                                         )}
                                                     </div>
                                                 </div>

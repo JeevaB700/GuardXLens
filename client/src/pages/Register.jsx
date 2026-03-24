@@ -33,7 +33,11 @@ const Register = () => {
         try {
             const res = await axios.post(`${API_BASE_URL}/api/auth/${endpoint}`, formData);
             if (res.data.success) {
-                alert("Registration Successful! Please Login.");
+                if (res.data.isPending) {
+                    alert(res.data.message);
+                } else {
+                    alert("Registration Successful! Please Login.");
+                }
                 navigate('/login');
             }
         } catch (error) {
@@ -99,14 +103,16 @@ const Register = () => {
                                 {/* Role Toggle */}
                                 <div className="d-flex bg-white bg-opacity-5 rounded p-1 mb-4 border border-white border-opacity-10">
                                     <button
+                                        type="button"
                                         onClick={() => setRole('student')}
-                                        className={`btn w-50 border-0 rounded py-2 d-flex align-items-center justify-content-center gap-2 transition-all ${role === 'student' ? 'bg-primary text-white shadow-sm fw-bold' : 'text-white-50'}`}
+                                        className={`btn w-50 border-0 rounded py-2 d-flex align-items-center justify-content-center gap-2 transition-all ${role === 'student' ? 'bg-primary text-white shadow-sm fw-bold' : 'bg-transparent text-primary hover-bg-light-10'}`}
                                     >
                                         <User size={18} /> Student
                                     </button>
                                     <button
+                                        type="button"
                                         onClick={() => setRole('institution')}
-                                        className={`btn w-50 border-0 rounded py-2 d-flex align-items-center justify-content-center gap-2 transition-all ${role === 'institution' ? 'bg-primary text-white shadow-sm fw-bold' : 'text-white-50'}`}
+                                        className={`btn w-50 border-0 rounded py-2 d-flex align-items-center justify-content-center gap-2 transition-all ${role === 'institution' ? 'bg-primary text-white shadow-sm fw-bold' : 'bg-transparent text-primary hover-bg-light-10'}`}
                                     >
                                         <Building size={18} /> Institution
                                     </button>

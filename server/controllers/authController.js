@@ -28,20 +28,109 @@ const registerStudent = async (req, res) => {
   } catch (error) { res.status(500).json({ message: "Server Error" }); }
 };
 
-// 2. REGISTER INSTITUTION
+// 2. REGISTER INSTITUTION (Sends Request to Admin)
 const registerInstitution = async (req, res) => {
   try {
     const { institutionName, adminName, email, password } = req.body;
 
     const userExists = await User.findOne({ email });
-    if (userExists) return res.status(400).json({ message: "Email already registered" });
+    if (userExists) return res.status(400).json({ message: "Email already registered in the system." });
 
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    // Create Admin User
+    // Create a temporary registration token instead of saving to DB
+    const registrationToken = jwt.sign(
+      { institutionName, adminName, email, password: hashedPassword },
+      process.env.JWT_SECRET,
+      { expiresIn: '7d' } // Link valid for 7 days
+    );
+
+    const serverUrl = process.env.SERVER_URL || 'http://localhost:5000';
+    const approveUrl = `${serverUrl}/api/auth/approve-institution?token=${registrationToken}`;
+    
+    // --- DEV HELPER: Log the link to terminal so you can test without emails working ---
+    console.log("-----------------------------------------");
+    console.log("🔗 INSTITUTION APPROVAL LINK (Admin Only):");
+    console.log(approveUrl);
+    console.log("-----------------------------------------");
+
+    const htmlMessage = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 8px;">
+        <h2 style="color: #1e293b; margin-top: 0;">New Institution Request</h2>
+        <p>A new institution has requested to join GuardXLens.</p>
+        <ul style="list-style-type: none; padding-left: 0;">
+          <li style="margin-bottom: 8px;"><strong>Institution:</strong> ${institutionName}</li>
+          <li style="margin-bottom: 8px;"><strong>Admin Name:</strong> ${adminName}</li>
+          <li style="margin-bottom: 8px;"><strong>Contact Email:</strong> ${email}</li>
+        </ul>
+        <div style="margin-top: 35px; text-align: center;">
+          <a href="${approveUrl}" style="background-color: #22c55e; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">Approve Institution</a>
+        </div>
+        <p style="margin-top: 30px; color: #64748b; font-size: 14px;">If you do not wish to approve this request, safely ignore this email.</p>
+      </div>
+    `;
+
+    try {
+      // If user hasn't configured email...
+      if (!process.env.EMAIL_USER || process.env.EMAIL_USER === 'your-email@gmail.com') {
+        console.log("ℹ️ SYSTEM: Email not configured fully. Staying in Dev Mode.");
+        return res.status(200).json({ 
+          success: true, 
+          message: "Registration submitted (Dev Mode: Check Server Console for approval link)" 
+        });
+      }
+
+      const cleanEmail = process.env.EMAIL_USER.trim();
+      const cleanPass = process.env.EMAIL_PASS.replace(/\s/g, '');
+
+      const transporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: { user: cleanEmail, pass: cleanPass },
+      });
+
+      const mailOptions = {
+        from: `"GuardXLens Admin System" <${process.env.EMAIL_USER}>`,
+        to: process.env.EMAIL_USER, // Send TO the admin themselves
+        subject: 'Action Required: New Institution Registration',
+        html: htmlMessage,
+      };
+
+      await transporter.sendMail(mailOptions);
+      console.log("✅ Approval email sent to Admin.");
+      res.status(200).json({ success: true, message: "Registration request sent to Admin for approval. You will receive an email once approved." });
+    } catch (err) {
+      console.error("❌ EMAIL ERROR:", err.message);
+      res.status(200).json({ success: true, message: "Registration submitted, but backend email failed. Admin link logged in console." });
+    }
+  } catch (error) { res.status(500).json({ message: "Server Error" }); }
+};
+
+// 2b. APPROVE INSTITUTION
+const approveInstitution = async (req, res) => {
+  try {
+    const { token } = req.query;
+    if (!token) return res.status(400).send("No approval token provided.");
+
+    // Verify token
+    let decoded;
+    try {
+      decoded = jwt.verify(token, process.env.JWT_SECRET);
+    } catch (err) {
+      return res.status(400).send("<h2>Token invalid or expired.</h2><p>The registration request may have timed out.</p>");
+    }
+
+    const { institutionName, adminName, email, password } = decoded;
+
+    // Check if user already got created (admin clicked link twice)
+    const userExists = await User.findOne({ email });
+    if (userExists) {
+      return res.status(400).send("<h2>Institution already approved!</h2><p>This institution is already active in the system.</p>");
+    }
+
+    // Create Admin User using the hashed password from the token
     const newUser = await User.create({
-      name: adminName, email, password: hashedPassword, role: 'institution'
+      name: adminName, email, password, role: 'institution'
     });
 
     // Create Institution
@@ -53,8 +142,62 @@ const registerInstitution = async (req, res) => {
     newUser.institutionId = newInstitution._id;
     await newUser.save();
 
-    res.status(201).json({ success: true, message: "Institution registered successfully" });
-  } catch (error) { res.status(500).json({ message: "Server Error" }); }
+    // Send Welcome Email to the Institution
+    const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
+    const loginUrl = `${clientUrl}/login`;
+    const welcomeHtml = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 8px;">
+        <div style="text-align: center; margin-bottom: 20px;">
+          <h2 style="color: #1e293b; margin: 0;">Welcome to GuardXLens!</h2>
+        </div>
+        <div style="background-color: #f8fafc; padding: 20px; border-radius: 6px;">
+          <p>Hello <strong>${adminName}</strong>,</p>
+          <p>Great news! Your registration request for <strong>${institutionName}</strong> has been <strong>approved</strong> by the administrator.</p>
+          <p>You can now log in to your dashboard and start managing your secure exams and students.</p>
+        </div>
+        <div style="margin-top: 35px; text-align: center;">
+          <a href="${loginUrl}" style="background-color: #3b82f6; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">Log in to GuardXLens</a>
+        </div>
+      </div>
+    `;
+
+    try {
+      if (process.env.EMAIL_USER && process.env.EMAIL_USER !== 'your-email@gmail.com') {
+        const cleanEmail = process.env.EMAIL_USER.trim();
+        const cleanPass = process.env.EMAIL_PASS.replace(/\s/g, '');
+        const transporter = nodemailer.createTransport({
+          service: 'gmail',
+          auth: { user: cleanEmail, pass: cleanPass },
+        });
+
+        await transporter.sendMail({
+          from: `"GuardXLens Admin" <${process.env.EMAIL_USER}>`,
+          to: email, // Send to the newly approved institution
+          subject: 'GuardXLens Account Approved!',
+          html: welcomeHtml,
+        });
+        console.log(`✅ Welcome approval email sent to ${email}`);
+      }
+    } catch (err) {
+      console.error("❌ Failed to send welcome email:", err.message);
+    }
+
+    // Response page for Admin (HTML)
+    res.status(200).send(`
+      <div style="font-family: Arial, sans-serif; text-align: center; margin-top: 80px; padding: 20px;">
+        <div style="font-size: 64px; color: #22c55e; margin-bottom: 20px;">✅</div>
+        <h1 style="color: #1e293b;">Institution Approved Successfully!</h1>
+        <p style="color: #475569; font-size: 18px;"><strong>${institutionName}</strong> has been added to GuardXLens.</p>
+        <p style="color: #64748b; margin-top: 10px;">A welcome email has been sent to exactly <strong>${email}</strong>.</p>
+        <div style="margin-top: 40px; color: #94a3b8; font-size: 14px;">
+          <p>You may safely close this window.</p>
+        </div>
+      </div>
+    `);
+  } catch (error) {
+    console.error(error);
+    res.status(500).send("Internal Server Error during approval.");
+  }
 };
 
 // 3. LOGIN
@@ -135,7 +278,8 @@ const forgotPassword = async (req, res) => {
     await user.save();
 
     // Create reset url
-    const resetUrl = `http://localhost:5173/reset-password/${resetToken}`;
+    const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
+    const resetUrl = `${clientUrl}/reset-password/${resetToken}`;
 
     // --- DEV HELPER: Log the link to terminal so you can test without emails working ---
     console.log("-----------------------------------------");
@@ -265,6 +409,7 @@ const createDefaultAdmin = async () => {
 module.exports = {
   registerStudent,
   registerInstitution,
+  approveInstitution,
   loginUser,
   getInstitutions,
   getMyStudents,

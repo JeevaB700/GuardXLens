@@ -66,11 +66,17 @@ const StudentResults = () => {
         const accuracy = Math.round((correct / totalQ) * 100) || 0;
         const percentage = Math.round((result.score / result.totalMarks) * 100) || 0;
 
+        // Normalize peer stats to percentages
+        const totalMarks = result.totalMarks || 100;
+        const avgPerc = Math.round(((selectedExamStats?.average || 0) / totalMarks) * 100);
+        const highPerc = Math.round(((selectedExamStats?.highest || 0) / totalMarks) * 100);
+        const lowPerc = Math.round(((selectedExamStats?.lowest || 0) / totalMarks) * 100);
+
         const barData = [
             { name: 'My Score', value: percentage, color: '#3b82f6' },
-            { name: 'Avg Score', value: selectedExamStats?.average || 0, color: '#94a3b8' },
-            { name: 'Highest', value: selectedExamStats?.highest || 0, color: '#22c55e' },
-            { name: 'Lowest', value: selectedExamStats?.lowest || 0, color: '#ef4444' },
+            { name: 'Avg Score', value: avgPerc, color: '#94a3b8' },
+            { name: 'Highest', value: highPerc, color: '#22c55e' },
+            { name: 'Lowest', value: lowPerc, color: '#ef4444' },
         ];
 
         const pieData = [
@@ -155,7 +161,7 @@ const StudentResults = () => {
                                         <span className="badge bg-danger text-white border border-danger p-1 px-2" style={{ fontSize: '0.65rem' }}>Void/Malpractice</span>
                                     ) : (
                                         <span className={`badge ${selectedResult?._id === r._id ? 'bg-primary text-white' : 'bg-secondary bg-opacity-25 text-white-50'} border-0`} style={{ fontSize: '0.7rem' }}>
-                                            {r.score}/{r.totalMarks} Flags
+                                            {r.score}/{r.totalMarks} Marks
                                         </span>
                                     )}
                                     <ChevronRight size={14} className="text-white-50 opacity-50" />

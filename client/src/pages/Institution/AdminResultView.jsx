@@ -28,11 +28,17 @@ const AdminResultView = () => {
                     if (examRes.data.success) {
                         setExamDetails(examRes.data.exam);
                     }
+                    setLoading(false);
                 }
             } catch (e) {
                 console.error(e);
             } finally {
-                setLoading(false);
+                // If foundResult was not true, loading should still be set to false.
+                // If foundResult was true, setLoading(false) was already called.
+                // This ensures loading is always false after fetchDetails completes.
+                if (loading) { // Only set to false if it's still true (i.e., foundResult was false or an error occurred before it could be set)
+                    setLoading(false);
+                }
             }
         };
         fetchDetails();
@@ -105,10 +111,41 @@ const AdminResultView = () => {
                                     <span className="d-flex align-items-center gap-1"><Clock size={14} className="text-primary" /> {new Date(result.submittedAt).toLocaleString()}</span>
                                     <span className="d-flex align-items-center gap-1"><Award size={14} className="text-primary" /> {result.score} / {result.totalMarks} Total Marks</span>
                                 </div>
-                                {result.isMalpractice && (
-                                    <div className="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 p-2 px-3 d-flex align-items-center gap-2 animate-pulse w-fit">
-                                        <ShieldAlert size={16} /> 
-                                        <span className="fw-bold">SECURITY VIOLATION DETECTED</span>
+                                {((result.violationLogs || []).length > 0) && (
+                                    <div className="mt-4">
+                                        <div className="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 p-2 px-3 d-flex align-items-center gap-2 animate-pulse w-fit mb-3">
+                                            <ShieldAlert size={16} /> 
+                                            <span className="fw-bold">{result.isMalpractice ? 'SECURITY TERMINATION' : 'PROCTORING ALERTS'}</span>
+                                        </div>
+                                        
+                                        {/* DETAILED LOGS SECTION - Grouped by Type */}
+                                        <div className="p-4 rounded-3 bg-black bg-opacity-40 border border-danger border-opacity-10 shadow-inner">
+                                            <h6 className="small fw-bold text-danger text-uppercase mb-3 d-flex align-items-center gap-2 tracking-widest">
+                                                <Terminal size={14} /> Incident Summary
+                                            </h6>
+                                            <div className="d-flex flex-wrap gap-2">
+                                                {Object.entries((result.violationLogs || []).reduce((acc, log) => {
+                                                    const key = log.type || 'Unknown';
+                                                    if (!acc[key]) acc[key] = { count: 0, lastDetail: '', lastTime: '' };
+                                                    acc[key].count += 1;
+                                                    acc[key].lastDetail = log.details;
+                                                    acc[key].lastTime = log.time;
+                                                    return acc;
+                                                }, {})).map(([type, data], i) => (
+                                                    <div key={i} className="d-flex flex-column p-3 rounded-3 bg-danger bg-opacity-5 border border-danger border-opacity-20 transition-all hover-bg-danger-10" style={{ minWidth: '180px' }}>
+                                                        <div className="d-flex justify-content-between align-items-center mb-2">
+                                                            <div className="d-flex align-items-center gap-2">
+                                                                <AlertTriangle size={14} className="text-danger" />
+                                                                <span className="text-white fw-bold small text-uppercase tracking-wider" style={{ fontSize: '0.7rem' }}>{type.replace(/_/g, ' ')}</span>
+                                                            </div>
+                                                            <span className="badge bg-danger rounded-pill px-2 py-1" style={{ fontSize: '0.6rem' }}>x{data.count}</span>
+                                                        </div>
+                                                        <small className="text-white-50 mt-1 lh-sm" style={{ fontSize: '0.65rem' }}>{data.lastDetail || "Suspicious activity detected."}</small>
+                                                        {data.lastTime && <div className="text-white-25 mt-2" style={{ fontSize: '0.6rem' }}>Last: {data.lastTime}</div>}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
                                     </div>
                                 )}
                             </div>

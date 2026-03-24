@@ -13,6 +13,7 @@ const AdminStudents = () => {
     const [malpracticeList, setMalpracticeList] = useState([]);
     const [logModalOpen, setLogModalOpen] = useState(false);
     const [studentLogs, setStudentLogs] = useState([]);
+    const [allStudentLogs, setAllStudentLogs] = useState([]);
     const [logStudentName, setLogStudentName] = useState("");
     const [loading, setLoading] = useState(true);
 
@@ -45,15 +46,21 @@ const AdminStudents = () => {
     const handleStudentClick = async (student) => {
         setLoading(true);
         setSelectedStudent(student);
+        setResults([]);
+        setAllStudentLogs([]);
         try {
             const token = sessionStorage.getItem('token');
-            const res = await axios.get(`${API_BASE_URL}/api/student/results/${student._id}`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            const config = { headers: { Authorization: `Bearer ${token}` } };
+            
+            const [res, logsRes] = await Promise.all([
+                axios.get(`${API_BASE_URL}/api/student/results/${student._id}`, config),
+                axios.get(`${API_BASE_URL}/api/admin/student-logs/${student._id}`, config)
+            ]);
+            
             if (res.data.success) {
-                // Sort results by submittedAt (descending)
                 const sortedResults = (res.data.results || []).sort((a, b) => new Date(b.submittedAt) - new Date(a.submittedAt));
                 setResults(sortedResults);
+                if (logsRes.data.success) setAllStudentLogs(logsRes.data.logs || []);
                 setView('results');
             }
         } catch (e) { console.error(e); } finally { setLoading(false); }
@@ -287,19 +294,27 @@ const AdminStudents = () => {
                                                 const isPass = percentage >= 40;
                                                 return (
                                                     <tr key={idx}>
-                                                        <td className="ps-4 fw-medium text-white">{r.examId?.title || "Unknown"}</td>
+                                                        <td className="ps-4">
+                                                            <div className="fw-medium text-white">{r.examId?.title || "Unknown"}</div>
+                                                        </td>
                                                         <td className="text-white-50"><small><Clock size={14} className="me-1" />{new Date(r.submittedAt).toLocaleDateString()}</small></td>
                                                         <td>
-                                                            {r.isMalpractice ? (
-                                                                <span className="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25"><AlertTriangle size={12} className="me-1" /> Malpractice</span>
+                                                            {(r.violationCount >= 3 || r.isMalpractice) ? (
+                                                                <span className="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 py-1 px-2 fw-bold text-uppercase">
+                                                                    <AlertTriangle size={12} className="me-1" /> Malpractice
+                                                                </span>
+                                                            ) : r.violationCount > 0 ? (
+                                                                <span className="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 py-1 px-2">
+                                                                    Flagged
+                                                                </span>
                                                             ) : (
                                                                 <span className="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25">Clean Record</span>
                                                             )}
                                                         </td>
                                                         <td><span className="fw-bold text-white">{r.score}</span> <span className="text-white-50 small">/ {r.totalMarks}</span></td>
                                                         <td className="text-end pe-4">
-                                                            <span className={`badge ${r.isMalpractice ? 'bg-danger' : isPass ? 'bg-success' : 'bg-warning'}`}>
-                                                                {r.isMalpractice ? 'VOID' : `${percentage}%`}
+                                                            <span className={`badge ${(r.violationCount > 0 || r.isMalpractice || !isPass) ? 'bg-danger' : 'bg-success'}`}>
+                                                                {(r.violationCount >= 3 || r.isMalpractice) ? 'VOID' : `${percentage}%`}
                                                             </span>
                                                         </td>
                                                     </tr>
