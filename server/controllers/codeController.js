@@ -42,6 +42,8 @@ const executeCode = async (req, res) => {
           version: config.version,
           files: [{ content: sourceCode }],
           stdin: input, 
+        }, {
+          headers: { 'User-Agent': 'GuardXLens' }
         });
 
         // 1. CHECK FOR COMPILATION ERROR
@@ -73,9 +75,13 @@ const executeCode = async (req, res) => {
 
       } catch (err) {
         console.error("Piston/Network Error:", err.message);
+        if (err.response) {
+            console.error("Piston Response Error Data:", err.response.data);
+        }
         results.push({ 
             caseId: index + 1, 
             status: "Runtime Error", 
+            expected: expectedOutput,
             actual: err.message 
         });
       }
