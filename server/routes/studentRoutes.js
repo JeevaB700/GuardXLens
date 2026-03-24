@@ -1,7 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const multer = require('multer'); // Import Multer for file uploads
-const upload = multer({ dest: 'uploads/' }); // Configure temp upload folder
+const storage = multer.memoryStorage();
+const upload = multer({ storage: storage }); // Configure memory storage
 
 const {
     getAllExams, getExamForStudent, submitExam, getStudentResults,
