@@ -5,6 +5,7 @@ import {
     Plus, Save, Trash2, FileText, BrainCircuit, X, CheckCircle,
     Code, Type, List, Wand2, ArrowLeft, Layers, Clock, CloudLightning
 } from 'lucide-react';
+import API_BASE_URL from '../../config';
 
 const CreateExam = () => {
     const navigate = useNavigate();
@@ -87,7 +88,7 @@ const CreateExam = () => {
         setGenerating(qIndex);
         try {
             const token = sessionStorage.getItem('token');
-            const res = await axios.post('http://localhost:5000/api/student/generate-test-cases',
+            const res = await axios.post(`${API_BASE_URL}/api/student/generate-test-cases`,
                 { questionText: q.questionText },
                 { headers: { Authorization: `Bearer ${token}` } }
             );
@@ -129,7 +130,7 @@ const CreateExam = () => {
 
         try {
             const token = sessionStorage.getItem('token');
-            const res = await axios.post('http://localhost:5000/api/student/extract-questions', formData, {
+            const res = await axios.post(`${API_BASE_URL}/api/student/extract-questions`, formData, {
                 headers: { 'Content-Type': 'multipart/form-data', Authorization: `Bearer ${token}` }
             });
             if (res.data.success) {
@@ -158,7 +159,7 @@ const CreateExam = () => {
         setLoading(true);
         try {
             const token = sessionStorage.getItem('token');
-            await axios.post('http://localhost:5000/api/admin/save', examData, {
+            await axios.post(`${API_BASE_URL}/api/admin/save`, examData, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             navigate('/institution/dashboard');

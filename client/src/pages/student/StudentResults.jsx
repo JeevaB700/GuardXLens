@@ -3,6 +3,7 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, PieChart, Pie } from 'recharts';
 import { Target, Clock, CheckCircle, XCircle, AlertTriangle, ChevronRight, ArrowLeft, LayoutDashboard, FileText, ShieldAlert, Award, AlertCircle } from 'lucide-react';
+import API_BASE_URL from '../../config';
 
 const StudentResults = () => {
     const [results, setResults] = useState([]);
@@ -21,7 +22,7 @@ const StudentResults = () => {
 
         const fetchResults = async () => {
             try {
-                const res = await axios.get(`http://localhost:5000/api/student/results/${JSON.parse(userStr).id}`, {
+                const res = await axios.get(`${API_BASE_URL}/api/student/results/${JSON.parse(userStr).id}`, {
                     headers: { Authorization: `Bearer ${token}` }
                 });
 
@@ -43,7 +44,7 @@ const StudentResults = () => {
         try {
             const token = sessionStorage.getItem('token');
             // Fetch full exam details to get the questions/options texts
-            const res = await axios.get(`http://localhost:5000/api/student/exam/${r.examId._id || r.examId}`, {
+            const res = await axios.get(`${API_BASE_URL}/api/student/exam/${r.examId._id || r.examId}`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             if (res.data.success) {

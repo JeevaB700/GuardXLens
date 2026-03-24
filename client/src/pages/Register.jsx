@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { ShieldCheck, User, Building, ArrowRight, Loader2, Lock, CheckCircle } from 'lucide-react';
+import API_BASE_URL from '../config';
 
 const Register = () => {
     const navigate = useNavigate();
@@ -17,7 +18,7 @@ const Register = () => {
 
     useEffect(() => {
         if (role === 'student') {
-            axios.get('http://localhost:5000/api/auth/institutions')
+            axios.get(`${API_BASE_URL}/api/auth/institutions`)
                 .then(res => setInstitutions(res.data.institutions))
                 .catch(err => console.error(err));
         }
@@ -30,7 +31,7 @@ const Register = () => {
         setLoading(true);
         const endpoint = role === 'student' ? 'register' : 'register-institution';
         try {
-            const res = await axios.post(`http://localhost:5000/api/auth/${endpoint}`, formData);
+            const res = await axios.post(`${API_BASE_URL}/api/auth/${endpoint}`, formData);
             if (res.data.success) {
                 alert("Registration Successful! Please Login.");
                 navigate('/login');

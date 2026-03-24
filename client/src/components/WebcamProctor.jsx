@@ -58,7 +58,7 @@ const WebcamProctor = ({ onViolation }) => {
         loadModels();
     }, []);
 
-    // 2. DETECTION LOOP (Every 3 seconds)
+    // 2. DETECTION LOOP (Every 1 second for higher accuracy and responsiveness)
     useEffect(() => {
         let interval;
         if (modelsLoaded) {
@@ -67,6 +67,7 @@ const WebcamProctor = ({ onViolation }) => {
                     setDetecting(true);
                     const video = webcamRef.current.video;
 
+                    // 1. FACE DETECTION
                     const detections = await faceapi.detectAllFaces(
                         video,
                         new faceapi.TinyFaceDetectorOptions()
@@ -78,11 +79,10 @@ const WebcamProctor = ({ onViolation }) => {
                     // LOGIC: NO FACE
                     if (count === 0) {
                         setNoFaceCounter(prev => prev + 1);
-                        // Grace period of 3 cycles (~9 seconds total if interval is 3s)
-                        // but let's make it more sensitive for an exam
+                        // Grace period of 2 cycles (~2 seconds total if interval is 1s)
                         if (noFaceCounter >= 2) {
                             onViolation("NO_FACE_DETECTED", "No user visible in camera");
-                            setNoFaceCounter(0); // Reset after flagging
+                            setNoFaceCounter(0); 
                         }
                     } else {
                         setNoFaceCounter(0);
@@ -96,10 +96,17 @@ const WebcamProctor = ({ onViolation }) => {
                     // 3. LOGIC: OBJECT DETECTION (Phones/Books)
                     if (objectModel) {
                         const predictions = await objectModel.detect(video);
-                        const phone = predictions.find(p => p.class === 'cell phone' && p.score > 0.6);
+                        
+                        // Look for 'cell phone' or 'remote' (common mirror for phones in COCO-SSD)
+                        // Lowered threshold to 0.45 for better recall as requested
+                        const phone = predictions.find(p => 
+                            (p.class === 'cell phone' || p.class === 'remote') && p.score > 0.45
+                        );
+
                         if (phone) {
+                            console.log(`📱 AI Detected: ${phone.class} with confidence ${Math.round(phone.score * 100)}%`);
                             setIsPhoneDetected(true);
-                            onViolation("MOBILE_PHONE_DETECTED", "Mobile phone visible in camera");
+                            onViolation("MOBILE_PHONE_DETECTED", `Mobile phone detected (${Math.round(phone.score * 100)}% confidence)`);
                         } else {
                             setIsPhoneDetected(false);
                         }
@@ -107,10 +114,10 @@ const WebcamProctor = ({ onViolation }) => {
 
                     setDetecting(false);
                 }
-            }, 3000);
+            }, 1000); // Reduced from 3000ms to 1000ms
         }
         return () => clearInterval(interval);
-    }, [modelsLoaded, noFaceCounter, onViolation]);
+    }, [modelsLoaded, noFaceCounter, onViolation, objectModel]);
 
     return (
         <div className="position-fixed bottom-0 end-0 p-3 z-3" style={{ width: '200px' }}>
@@ -131,7 +138,7 @@ const WebcamProctor = ({ onViolation }) => {
                         ref={webcamRef}
                         screenshotFormat="image/jpeg"
                         className="w-100 h-100 object-fit-cover opacity-75"
-                        videoConstraints={{ width: 320, height: 240, facingMode: "user" }}
+                        videoConstraints={{ width: 640, height: 480, facingMode: "user" }}
                     />
 
                     {/* Status Overlays */}

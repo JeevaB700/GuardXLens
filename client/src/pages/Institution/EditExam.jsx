@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { Save, Trash2, ArrowLeft, Plus, CheckCircle, Code, Type, List, Wand2, X, FileEdit, Clock, Layers } from 'lucide-react';
+import API_BASE_URL from '../../config';
 
 const EditExam = () => {
   const { id } = useParams();
@@ -20,7 +21,7 @@ const EditExam = () => {
     const fetchExam = async () => {
       try {
         const token = sessionStorage.getItem('token');
-        const res = await axios.get(`http://localhost:5000/api/student/exam/${id}`, {
+        const res = await axios.get(`${API_BASE_URL}/api/student/exam/${id}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         if (res.data.success) {
@@ -97,7 +98,7 @@ const EditExam = () => {
     if (!q.questionText) return alert("Please enter question text first.");
     setGenerating(qIndex);
     try {
-      const res = await axios.post('http://localhost:5000/api/student/generate-test-cases', { questionText: q.questionText });
+      const res = await axios.post(`${API_BASE_URL}/api/student/generate-test-cases`, { questionText: q.questionText });
       if (res.data.success) {
         const updated = [...examData.questions];
         updated[qIndex].testCases = res.data.testCases;
@@ -127,7 +128,7 @@ const EditExam = () => {
   const handleSave = async () => {
     try {
       const token = sessionStorage.getItem('token');
-      await axios.put(`http://localhost:5000/api/admin/exam/${id}`, examData, {
+      await axios.put(`${API_BASE_URL}/api/admin/exam/${id}`, examData, {
         headers: { Authorization: `Bearer ${token}` }
       });
       alert("Exam updated successfully!");

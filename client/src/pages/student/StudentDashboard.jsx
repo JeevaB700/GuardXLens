@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { Play, Clock, CheckCircle, AlertTriangle, FileText, History, LogOut, TrendingUp, Award, Calendar } from 'lucide-react';
+import API_BASE_URL from '../../config';
 
 const StudentDashboard = () => {
     const [exams, setExams] = useState([]);
@@ -22,8 +23,8 @@ const StudentDashboard = () => {
             try {
                 const config = { headers: { Authorization: `Bearer ${token}` } };
                 const [examRes, resRes] = await Promise.all([
-                    axios.get('http://localhost:5000/api/student/exams', config),
-                    axios.get(`http://localhost:5000/api/student/results/${parsedUser.id}`, config)
+                    axios.get(`${API_BASE_URL}/api/student/exams`, config),
+                    axios.get(`${API_BASE_URL}/api/student/results/${parsedUser.id}`, config)
                 ]);
 
                 // Sort exams by _id (descending) or createdAt if available

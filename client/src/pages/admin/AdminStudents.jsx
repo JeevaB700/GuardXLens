@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { Building, User, ChevronRight, ArrowLeft, GraduationCap, TrendingUp, CheckCircle, Search, Filter, ShieldAlert, FileText, Clock, AlertTriangle } from 'lucide-react';
+import API_BASE_URL from '../../config';
 
 const AdminStudents = () => {
     const [view, setView] = useState('institutions');
@@ -21,8 +22,8 @@ const AdminStudents = () => {
                 const token = sessionStorage.getItem('token');
                 const config = { headers: { Authorization: `Bearer ${token}` } };
                 const [instRes, malRes] = await Promise.all([
-                    axios.get('http://localhost:5000/api/auth/institutions'),
-                    axios.get('http://localhost:5000/api/admin/malpractice-students', config)
+                    axios.get(`${API_BASE_URL}/api/auth/institutions`),
+                    axios.get(`${API_BASE_URL}/api/admin/malpractice-students`, config)
                 ]);
                 if (instRes.data.success) setInstitutions(instRes.data.institutions);
                 if (malRes.data.success) setMalpracticeList(malRes.data.studentIds);
@@ -36,7 +37,7 @@ const AdminStudents = () => {
         setSelectedInst(inst);
         try {
             const token = sessionStorage.getItem('token');
-            const res = await axios.get(`http://localhost:5000/api/admin/students/${inst._id}`, { headers: { Authorization: `Bearer ${token}` } });
+            const res = await axios.get(`${API_BASE_URL}/api/admin/students/${inst._id}`, { headers: { Authorization: `Bearer ${token}` } });
             if (res.data.success) { setStudents(res.data.students); setView('students'); }
         } catch (e) { console.error(e); } finally { setLoading(false); }
     };
@@ -46,7 +47,7 @@ const AdminStudents = () => {
         setSelectedStudent(student);
         try {
             const token = sessionStorage.getItem('token');
-            const res = await axios.get(`http://localhost:5000/api/student/results/${student._id}`, {
+            const res = await axios.get(`${API_BASE_URL}/api/student/results/${student._id}`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             if (res.data.success) {
@@ -68,7 +69,7 @@ const AdminStudents = () => {
         setStudentLogs([]);
         try {
             const token = sessionStorage.getItem('token');
-            const res = await axios.get(`http://localhost:5000/api/admin/student-logs/${student._id}`, {
+            const res = await axios.get(`${API_BASE_URL}/api/admin/student-logs/${student._id}`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             if (res.data.success) setStudentLogs(res.data.logs);

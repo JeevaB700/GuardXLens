@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
 import { Save, Trash2, Plus, Code, ArrowLeft, CheckCircle, Type, List, Sparkles, FileText, Layers, Clock, Zap } from 'lucide-react';
+import API_BASE_URL from '../../config';
 
 const ReviewExam = () => {
   const location = useLocation();
@@ -97,7 +98,7 @@ const ReviewExam = () => {
       }
 
       const response = await axios.post(
-        'http://localhost:5000/api/admin/save',
+        `${API_BASE_URL}/api/admin/save`,
         examData,
         {
           headers: { Authorization: `Bearer ${token}` }
@@ -308,7 +309,7 @@ const ReviewExam = () => {
                                   return;
                                 }
                                 try {
-                                  const res = await axios.post('http://localhost:5000/api/admin/generate-testcases', {
+                                  const res = await axios.post(`${API_BASE_URL}/api/admin/generate-testcases`, {
                                     questionText: q.questionText
                                   });
                                   if (res.data.success) {

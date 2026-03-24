@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { FileCheck, Edit, Trash2, Clock, Plus, ArrowLeft, Search, Layers, AlertCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import API_BASE_URL from '../../config';
 
 const ActiveExams = () => {
     const [activeExams, setActiveExams] = useState([]);
@@ -13,7 +14,7 @@ const ActiveExams = () => {
         const fetchExams = async () => {
             try {
                 const token = sessionStorage.getItem('token');
-                const res = await axios.get('http://localhost:5000/api/admin/institution-exams', {
+                const res = await axios.get(`${API_BASE_URL}/api/admin/institution-exams`, {
                     headers: { Authorization: `Bearer ${token}` }
                 });
                 setActiveExams(res.data.exams || []);
@@ -29,7 +30,7 @@ const ActiveExams = () => {
         if (!window.confirm("Are you sure you want to delete this exam?")) return;
         try {
             const token = sessionStorage.getItem('token');
-            const res = await axios.delete(`http://localhost:5000/api/admin/exam/${examId}`, {
+            const res = await axios.delete(`${API_BASE_URL}/api/admin/exam/${examId}`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             if (res.data.success) setActiveExams(activeExams.filter(exam => exam._id !== examId));

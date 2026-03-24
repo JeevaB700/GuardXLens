@@ -4,6 +4,7 @@ import axios from 'axios';
 import Editor from "@monaco-editor/react";
 import { Clock, Play, Terminal, Lock, ShieldAlert, AlertOctagon, CheckCircle, Maximize2, ChevronLeft, ChevronRight, Menu, X, Shield } from 'lucide-react';
 import WebcamProctor from '../../components/WebcamProctor';
+import API_BASE_URL from '../../config';
 
 const TakeExam = () => {
     const { id } = useParams();
@@ -51,7 +52,7 @@ const TakeExam = () => {
                 const token = sessionStorage.getItem('token');
                 if (!token) return navigate('/login');
 
-                const res = await axios.get(`http://localhost:5000/api/student/exam/${id}`, { headers: { Authorization: `Bearer ${token}` } });
+                const res = await axios.get(`${API_BASE_URL}/api/student/exam/${id}`, { headers: { Authorization: `Bearer ${token}` } });
                 if (res.data.success) {
                     setExam(res.data.exam);
                     setTimeLeft(res.data.exam.duration ? res.data.exam.duration * 60 : 3600);
@@ -72,7 +73,7 @@ const TakeExam = () => {
     const logViolation = async (action, details) => {
         try {
             const token = sessionStorage.getItem('token');
-            await axios.post('http://localhost:5000/api/log', { examId: id, action, details }, { headers: { Authorization: `Bearer ${token}` } });
+            await axios.post(`${API_BASE_URL}/api/log`, { examId: id, action, details }, { headers: { Authorization: `Bearer ${token}` } });
         } catch (e) { }
     };
 
@@ -81,7 +82,7 @@ const TakeExam = () => {
             setIsSubmitting(true);
             const token = sessionStorage.getItem('token');
             const user = JSON.parse(sessionStorage.getItem('user'));
-            await axios.post('http://localhost:5000/api/student/submit', {
+            await axios.post(`${API_BASE_URL}/api/student/submit`, {
                 examId: id,
                 answers: finalAnswers,
                 studentId: user?.id,
@@ -373,7 +374,7 @@ const TakeExam = () => {
         setConsoleOpen(true);
         try {
             const token = sessionStorage.getItem('token');
-            const res = await axios.post('http://localhost:5000/api/student/execute', {
+            const res = await axios.post(`${API_BASE_URL}/api/student/execute`, {
                 language: selectedLanguage,
                 sourceCode: answers[exam.questions[currentQIndex]._id],
                 questionId: exam.questions[currentQIndex]._id

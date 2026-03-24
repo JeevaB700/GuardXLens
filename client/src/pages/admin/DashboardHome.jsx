@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { Users, FileCheck, AlertTriangle, Globe, Activity } from 'lucide-react';
+import API_BASE_URL from '../../config';
 
 const DashboardHome = () => {
     const [stats, setStats] = useState({ students: 0, exams: 0, institutions: 0, violations: 0 });
@@ -14,10 +15,10 @@ const DashboardHome = () => {
                 const token = sessionStorage.getItem('token');
                 const config = { headers: { Authorization: `Bearer ${token}` } };
                 const [logsRes, instRes, studRes, examsRes] = await Promise.all([
-                    axios.get('http://localhost:5000/api/admin/logs', config),
-                    axios.get('http://localhost:5000/api/auth/institutions', config),
-                    axios.get('http://localhost:5000/api/auth/all-students', config),
-                    axios.get('http://localhost:5000/api/student/exams', config)
+                    axios.get(`${API_BASE_URL}/api/admin/logs`, config),
+                    axios.get(`${API_BASE_URL}/api/auth/institutions`, config),
+                    axios.get(`${API_BASE_URL}/api/auth/all-students`, config),
+                    axios.get(`${API_BASE_URL}/api/student/exams`, config)
                 ]);
                 setStats({
                     students: studRes.data.results?.length || 0,

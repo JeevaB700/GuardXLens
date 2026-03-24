@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { Users, FileCheck, Plus, Activity, ArrowRight, WalletCards, BookOpen, TrendingUp } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
+import API_BASE_URL from '../../config';
 
 const InstitutionDashboard = () => {
     const [stats, setStats] = useState({ students: 0, exams: 0 });
@@ -17,8 +18,8 @@ const InstitutionDashboard = () => {
                     return;
                 }
                 const config = { headers: { Authorization: `Bearer ${token}` } };
-                const sRes = await axios.get('http://localhost:5000/api/auth/my-students', config);
-                const eRes = await axios.get('http://localhost:5000/api/admin/institution-exams', config);
+                const sRes = await axios.get(`${API_BASE_URL}/api/auth/my-students`, config);
+                const eRes = await axios.get(`${API_BASE_URL}/api/admin/institution-exams`, config);
                 setStats({
                     students: sRes.data.students?.length || 0,
                     exams: eRes.data.exams?.length || 0
