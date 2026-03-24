@@ -1,4 +1,3 @@
-const fs = require('fs');
 const path = require('path'); // Added for extension checking
 const Exam = require('../models/Exam');
 const Result = require('../models/Result');
@@ -9,23 +8,23 @@ const { GoogleGenerativeAI } = require("@google/generative-ai");
 // Initialize Gemini
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-// Helper: Parse PDF
-const parsePDF = (filePath) => {
+// Helper: Parse PDF (Updated for memory storage)
+const parsePDF = (buffer) => {
   return new Promise((resolve, reject) => {
-    const pdfParser = new PDFParser(this, 1);
+    const pdfParser = new PDFParser(null, 1);
     pdfParser.on("pdfParser_dataError", (errData) => reject(errData.parserError));
-    pdfParser.on("pdfParser_dataReady", (pdfData) => {
+    pdfParser.on("pdfParser_dataReady", () => {
       const rawText = pdfParser.getRawTextContent();
       resolve(rawText);
     });
-    pdfParser.loadPDF(filePath);
+    pdfParser.parseBuffer(buffer);
   });
 };
 
-// Helper: Parse DOCX (New)
-const parseDOCX = async (filePath) => {
+// Helper: Parse DOCX (Updated for memory storage)
+const parseDOCX = async (buffer) => {
   try {
-    const result = await mammoth.extractRawText({ path: filePath });
+    const result = await mammoth.extractRawText({ buffer: buffer });
     return result.value; // The raw text
   } catch (error) {
     throw new Error("Failed to parse DOCX file");
@@ -43,9 +42,9 @@ const extractQuestions = async (req, res) => {
     // 1. Detect File Type & Extract Text
     try {
       if (fileExt === '.pdf') {
-        extractedText = await parsePDF(req.file.path);
+        extractedText = await parsePDF(req.file.buffer);
       } else if (fileExt === '.docx') {
-        extractedText = await parseDOCX(req.file.path);
+        extractedText = await parseDOCX(req.file.buffer);
       } else {
         return res.status(400).json({ message: "Unsupported file type. Please upload PDF or DOCX." });
       }
@@ -99,14 +98,12 @@ const extractQuestions = async (req, res) => {
       return res.status(500).json({ message: "AI generation failed. Please try a cleaner document." });
     }
 
-    // Cleanup uploaded file
-    if (fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
+    // No cleanup needed for memory storage
 
     res.json({ success: true, questions });
 
   } catch (error) {
     console.error("Extraction Error:", error);
-    if (req.file && fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
     res.status(500).json({ message: "Failed to process document" });
   }
 };

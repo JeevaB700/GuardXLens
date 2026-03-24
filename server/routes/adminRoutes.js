@@ -6,7 +6,8 @@ const { protect } = require('../middleware/authMiddleware');
 const { getStudentsByInstitutionId } = require('../controllers/authController');
 const { getLogs, getMalpracticeStudents, getStudentLogs } = require('../controllers/logController');
 const router = express.Router();
-const upload = multer({ dest: 'uploads/' });
+const storage = multer.memoryStorage();
+const upload = multer({ storage: storage });
 
 // AI Extraction Route (Can remain open or protected, better protected)
 router.post('/extract', upload.single('file'), extractQuestions);

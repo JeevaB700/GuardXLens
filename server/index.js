@@ -14,6 +14,14 @@ const app = express();
 app.use(cors());
 app.use(express.json()); // Allows us to parse JSON bodies
 
+// --- ENV CHECK ---
+if (!process.env.MONGO_URI) {
+  console.error("❌ CRITICAL: MONGO_URI is missing from environment variables!");
+}
+if (!process.env.JWT_SECRET) {
+  console.error("❌ CRITICAL: JWT_SECRET is missing from environment variables!");
+}
+
 // --- MONGODB CONNECTION ---
 const connectDB = async () => {
   try {
