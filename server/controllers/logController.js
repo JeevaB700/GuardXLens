@@ -1,5 +1,6 @@
 const ActivityLog = require('../models/ActivityLog');
 const Exam = require('../models/Exam');
+const User = require('../models/User'); // Import User for search
 
 // 1. LOG ACTIVITY (Existing)
 const logActivity = async (req, res) => {
@@ -10,29 +11,42 @@ const logActivity = async (req, res) => {
   } catch (e) { res.status(500).json({ message: "Log failed" }); }
 };
 
-// 2. GET ALL LOGS (Existing - For Super Admin)
+// 2. GET ALL LOGS (Enhanced - For Super Admin)
 const getLogs = async (req, res) => {
   try {
-    const logs = await ActivityLog.find().populate('studentId', 'name').populate('examId', 'title').sort({ timestamp: -1 }).limit(50);
-    res.json({ success: true, logs });
-  } catch (e) { res.status(500).json({ message: "Fetch failed" }); }
-};
+    const { search } = req.query;
+    let query = {};
+    
+    if (search && search.trim() !== "") {
+      // Find students whose name matches the search term (case-insensitive)
+      const students = await User.find({ 
+        name: { $regex: search.trim(), $options: 'i' } 
+      }).select('_id');
+      
+      const studentIds = students.map(s => s._id);
+      query.studentId = { $in: studentIds };
+    }
 
-// --- NEW FUNCTIONS ---
+    const logs = await ActivityLog.find(query)
+      .populate('studentId', 'name email')
+      .populate('examId', 'title')
+      .sort({ timestamp: -1 })
+      .limit(50); // Keep limit for safety, but now it's filtered
+      
+    res.json({ success: true, logs });
+  } catch (e) { 
+    console.error(e);
+    res.status(500).json({ message: "Fetch failed" }); 
+  }
+};
 
 // 3. GET STUDENTS WHO HAVE VIOLATIONS (For Institution Dashboard)
 const getMalpracticeStudents = async (req, res) => {
     try {
         const institutionId = req.user.institutionId;
-        
-        // A. Find all exams created by this institution
         const myExams = await Exam.find({ institutionId }).select('_id');
         const examIds = myExams.map(e => e._id);
-
-        // B. Find logs related to these exams
-        // We use .distinct() to get just the list of student IDs who have logs
         const flaggedStudentIds = await ActivityLog.find({ examId: { $in: examIds } }).distinct('studentId');
-
         res.json({ success: true, studentIds: flaggedStudentIds });
     } catch (e) {
         console.error(e);
@@ -47,7 +61,6 @@ const getStudentLogs = async (req, res) => {
         const logs = await ActivityLog.find({ studentId })
             .populate('examId', 'title')
             .sort({ timestamp: -1 });
-            
         res.json({ success: true, logs });
     } catch (e) {
         res.status(500).json({ message: "Error fetching student logs" });
