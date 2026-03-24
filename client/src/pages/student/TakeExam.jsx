@@ -116,7 +116,13 @@ const TakeExam = () => {
         isShowingAlert.current = true;
         alert(msg);
         // Delay resetting to allow FS event to settle
-        setTimeout(() => { isShowingAlert.current = false; }, 500);
+        setTimeout(() => { 
+            isShowingAlert.current = false; 
+            // Re-enter fullscreen if exam is active and was exited by the alert
+            if (isExamStarted && !document.fullscreenElement && !showTerminationModal) {
+                enterFullScreen();
+            }
+        }, 500);
     };
 
     const handleSecurityViolation = useCallback(async (type, details = "") => {
