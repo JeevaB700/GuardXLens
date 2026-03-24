@@ -1,12 +1,9 @@
-const { GoogleGenerativeAI } = require("@google/generative-ai");
+const axios = require('axios');
 const Exam = require('../models/Exam');
-
-// Initialize Gemini
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 const executeCode = async (req, res) => {
   const { language, sourceCode, questionId } = req.body;
-  console.log(`\n--- Virtual Execution (${language}) for Q: ${questionId} ---`);
+  console.log(`\n--- Real Execution (${language}) for Q: ${questionId} ---`);
 
   try {
     const exam = await Exam.findOne({ "questions._id": questionId });
@@ -16,8 +13,21 @@ const executeCode = async (req, res) => {
     const testCases = question.testCases || [];
     
     console.log(`Found ${testCases.length} test cases.`);
-    const model = genAI.getGenerativeModel({ model: "gemini-flash-latest" });
+
     const results = [];
+
+    // Language mapping for Piston
+    const languageMap = {
+      'java': { language: 'java', version: '15.0.2' },
+      'python': { language: 'python', version: '3.10.0' },
+      'c': { language: 'c', version: '10.2.0' },
+      'cpp': { language: 'cpp', version: '10.2.0' },
+    };
+
+    const config = languageMap[language.toLowerCase()];
+    if (!config) {
+        return res.json({ results: [{ status: "Error", message: "Language not supported." }] });
+    }
 
     for (let index = 0; index < testCases.length; index++) {
       const tc = testCases[index];
@@ -25,37 +35,16 @@ const executeCode = async (req, res) => {
       const expectedOutput = (tc.output || "").trim();
 
       try {
-        const prompt = `
-          ACT AS A CODE COMPILER AND INTERPRETER.
-          Language: ${language}
-          Code:
-          ${sourceCode}
-          Input (Standard Input):
-          ${input}
-          
-          TASK:
-          1. Execute/Simulate the code with the provided input.
-          2. Return ONLY the output (stdout).
-          3. If there is a syntax error or runtime exception, return the error message starting with "ERROR:".
-          4. NO EXPLANATIONS. NO MARKDOWN. ONLY RAW OUTPUT.
-        `;
+        // --- TRY MIRROR 1: PISTON CLOUDFLARE MIRROR (Fast & No Key) ---
+        const response = await axios.post('https://piston.engineer-man.workers.dev/api/v2/execute', {
+          language: config.language,
+          version: config.version,
+          files: [{ content: sourceCode }],
+          stdin: input, 
+        }, { timeout: 10000 });
 
-        const result = await model.generateContent(prompt);
-        const rawResponse = result.response.text().trim();
-        
-        console.log(`AI Response: ${JSON.stringify(rawResponse)}`);
-
-        if (rawResponse.startsWith("ERROR:")) {
-            results.push({
-                caseId: index + 1,
-                status: "Runtime Error",
-                expected: expectedOutput,
-                actual: rawResponse.replace("ERROR:", "").trim()
-            });
-            continue;
-        }
-
-        const actualOutput = rawResponse;
+        const rawOutput = response.data.run.stdout || response.data.run.stderr || "";
+        const actualOutput = rawOutput.trim();
         const passed = actualOutput === expectedOutput;
 
         results.push({
@@ -66,12 +55,13 @@ const executeCode = async (req, res) => {
         });
 
       } catch (err) {
-        console.error("Gemini Execution Error:", err.message);
+        console.error("Mirror 1 Failed:", err.message);
+        // Fallback or show error
         results.push({ 
             caseId: index + 1, 
             status: "Runtime Error", 
             expected: expectedOutput,
-            actual: "AI Execution Failed: " + err.message 
+            actual: "Execution Mirror Timeout or Blocked. Please try again." 
         });
       }
     }
@@ -85,4 +75,4 @@ const executeCode = async (req, res) => {
   }
 };
 
-module.exports = { executeCode };
+module.exports = { executeCode };
