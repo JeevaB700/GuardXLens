@@ -16,7 +16,7 @@ const executeCode = async (req, res) => {
     const testCases = question.testCases || [];
     
     console.log(`Found ${testCases.length} test cases.`);
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const model = genAI.getGenerativeModel({ model: "gemini-flash-latest" });
     const results = [];
 
     for (let index = 0; index < testCases.length; index++) {
