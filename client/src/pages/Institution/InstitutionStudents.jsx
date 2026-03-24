@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import { User, ChevronRight, FileText, AlertTriangle, X, Clock, ShieldAlert, ArrowLeft, GraduationCap, TrendingUp, CheckCircle, Search, Shield } from 'lucide-react';
+import { User, ChevronRight, FileText, AlertTriangle, X, Clock, ShieldAlert, ArrowLeft, GraduationCap, TrendingUp, CheckCircle, Search, Shield, Terminal } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import API_BASE_URL from '../../config';
 
@@ -25,8 +25,8 @@ const InstitutionStudents = () => {
                     axios.get(`${API_BASE_URL}/api/auth/my-students`, config),
                     axios.get(`${API_BASE_URL}/api/admin/malpractice-students`, config)
                 ]);
-                if (studRes.data.success) setStudents(studRes.data.students);
-                if (malRes.data.success) setMalpracticeList(malRes.data.studentIds);
+                if (studRes.data.success) setStudents(studRes.data.students || []);
+                if (malRes.data.success) setMalpracticeList(malRes.data.studentIds || []);
             } catch (error) { console.error(error); }
             finally { setLoading(false); }
         };
@@ -36,8 +36,11 @@ const InstitutionStudents = () => {
     const handleStudentClick = async (student) => {
         setSelectedStudent(student);
         try {
-            const res = await axios.get(`${API_BASE_URL}/api/student/results/${student._id}`);
-            if (res.data.success) setResults(res.data.results);
+            const token = sessionStorage.getItem('token');
+            const res = await axios.get(`${API_BASE_URL}/api/student/results/${student._id}`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            if (res.data.success) setResults(res.data.results || []);
         } catch (error) { console.error(error); }
     };
 
@@ -51,22 +54,22 @@ const InstitutionStudents = () => {
             const res = await axios.get(`${API_BASE_URL}/api/admin/student-logs/${student._id}`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
-            if (res.data.success) setStudentLogs(res.data.logs);
+            if (res.data.success) setStudentLogs(res.data.logs || []);
         } catch (error) { console.error(error); }
     };
 
     const calculateStats = () => {
         if (!results.length) return { avg: 0, passed: 0, total: 0 };
         const total = results.length;
-        const passed = results.filter(r => (r.score / r.totalMarks) >= 0.4).length;
-        const avg = Math.round(results.reduce((acc, curr) => acc + (curr.score / curr.totalMarks) * 100, 0) / total);
+        const passed = results.filter(r => (r.score / (r.totalMarks || 1)) >= 0.4).length;
+        const avg = Math.round(results.reduce((acc, curr) => acc + (curr.score / (curr.totalMarks || 1)) * 100, 0) / total);
         return { avg, passed, total };
     };
 
     const stats = selectedStudent ? calculateStats() : {};
-    const filteredStudents = students.filter(s =>
-        s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        s.email.toLowerCase().includes(searchTerm.toLowerCase())
+    const filteredStudents = (students || []).filter(s =>
+        s.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        s.email?.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
     if (loading) return (
@@ -97,7 +100,7 @@ const InstitutionStudents = () => {
                                                     <strong className="text-danger small text-uppercase">{log.action || "Violation"}</strong>
                                                     <small className="text-white-50 font-monospace">{new Date(log.timestamp).toLocaleString()}</small>
                                                 </div>
-                                                <p className="mb-1 small text-light"><span className="text-white-50">Exam:</span> {log.examId?.title}</p>
+                                                <p className="mb-1 small text-light"><span className="text-white-50">Exam:</span> {log.examId?.title || "Deleted Exam"}</p>
                                                 <code className="d-block p-2 rounded bg-dark bg-opacity-50 border border-secondary border-opacity-25 small text-danger">{log.details}</code>
                                             </div>
                                         </div>
@@ -121,7 +124,7 @@ const InstitutionStudents = () => {
                         <div className="card-body p-4 p-md-5">
                             <div className="d-flex flex-column flex-md-row gap-4 align-items-center align-items-md-start">
                                 <div className="rounded-circle bg-primary bg-opacity-75 d-flex align-items-center justify-content-center text-white display-4 fw-bold shadow-sm" style={{ width: '100px', height: '100px' }}>
-                                    {selectedStudent.name.charAt(0)}
+                                    {selectedStudent.name?.charAt(0) || "S"}
                                 </div>
                                 <div className="text-center text-md-start">
                                     <h2 className="fw-bold mb-1 text-white">{selectedStudent.name}</h2>
@@ -129,7 +132,7 @@ const InstitutionStudents = () => {
                                         <User size={16} className="text-primary" /> {selectedStudent.email}
                                     </p>
                                     <div className="d-flex gap-2 justify-content-center justify-content-md-start">
-                                        <span className="badge bg-secondary bg-opacity-25 text-secondary border border-secondary border-opacity-25">ID: {selectedStudent._id.slice(-6).toUpperCase()}</span>
+                                        <span className="badge bg-secondary bg-opacity-25 text-secondary border border-secondary border-opacity-25">ID: {selectedStudent._id?.slice(-6).toUpperCase()}</span>
                                         {malpracticeList.includes(selectedStudent._id) &&
                                             <span className="badge bg-danger bg-opacity-25 text-danger border border-danger border-opacity-25 d-flex align-items-center gap-1"><ShieldAlert size={12} /> FLAGGED</span>
                                         }
@@ -174,7 +177,7 @@ const InstitutionStudents = () => {
                             <div className="text-center py-5 border border-white border-opacity-10 border-dashed rounded-4 text-white-50 glass-panel">No exam history recorded.</div>
                         ) : (
                             results.map((r, idx) => {
-                                const percentage = Math.round((r.score / r.totalMarks) * 100) || 0;
+                                const percentage = Math.round((r.score / (r.totalMarks || 1)) * 100) || 0;
                                 const isPass = percentage >= 40;
                                 const violationCount = r.violationCount || 0;
                                 
@@ -219,7 +222,7 @@ const InstitutionStudents = () => {
                                                             <div className="text-secondary text-uppercase fw-bold mb-1" style={{ fontSize: '0.6rem' }}>Integrity Logs</div>
                                                             <div className="d-flex flex-wrap gap-2">
                                                                 {r.violationLogs.slice(0, 3).map((log, i) => (
-                                                                    <span key={i} className="text-white-50" style={{ fontSize: '0.65rem' }}>• {log.type.replace(/_/g, ' ')}</span>
+                                                                    <span key={i} className="text-white-50" style={{ fontSize: '0.65rem' }}>• {(log.type || "Violation").replace(/_/g, ' ')}</span>
                                                                 ))}
                                                                 {r.violationLogs.length > 3 && <span className="text-primary" style={{ fontSize: '0.65rem' }}>+{r.violationLogs.length - 3} more</span>}
                                                             </div>
@@ -274,7 +277,7 @@ const InstitutionStudents = () => {
                                         <div className="card-body p-3 d-flex justify-content-between align-items-center">
                                             <div className="d-flex align-items-center gap-3 overflow-hidden">
                                                 <div className="rounded-circle bg-primary bg-opacity-25 d-flex align-items-center justify-content-center fw-bold text-primary border border-primary border-opacity-25" style={{ width: '48px', height: '48px' }}>
-                                                    {student.name.charAt(0)}
+                                                    {student.name?.charAt(0) || "S"}
                                                 </div>
                                                 <div className="text-truncate">
                                                     <h6 className="fw-bold mb-0 text-white">{student.name}</h6>
