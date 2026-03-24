@@ -23,7 +23,6 @@ const TakeExam = () => {
     const [allTestResults, setAllTestResults] = useState({}); // Track all Q results
     const [isRunning, setIsRunning] = useState(false);
     const [consoleOpen, setConsoleOpen] = useState(true);
-    const isShowingAlert = useRef(false); // Flag to prevent recursive alerts
 
     useEffect(() => {
         if (exam) document.title = `GuardXLens | ${exam.title}`;
@@ -37,6 +36,11 @@ const TakeExam = () => {
     const [showSuccessModal, setShowSuccessModal] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [showQuestionPalette, setShowQuestionPalette] = useState(false);
+    
+    // New Security Modal State
+    const [showSecurityModal, setShowSecurityModal] = useState(false);
+    const [securityModalTitle, setSecurityModalTitle] = useState("");
+    const [securityModalMessage, setSecurityModalMessage] = useState("");
 
     // REF
     const answersRef = useRef(answers);
@@ -112,18 +116,10 @@ const TakeExam = () => {
         submitExamData(answersRef.current, true);
     };
 
-    const safeAlert = (msg) => {
-        isShowingAlert.current = true;
-        alert(msg);
-        
-        // Immediately after alert dismissal (User Gesture)
-        if (isExamStarted && !document.fullscreenElement && !showTerminationModal) {
-            requestFullScreen(); 
-        }
-
-        setTimeout(() => { 
-            isShowingAlert.current = false; 
-        }, 500);
+    const safeAlert = (title, msg) => {
+        setSecurityModalTitle(title);
+        setSecurityModalMessage(msg);
+        setShowSecurityModal(true);
     };
 
     const handleSecurityViolation = useCallback(async (type, details = "") => {
@@ -131,7 +127,7 @@ const TakeExam = () => {
 
         // PRE-EXAM MODE: Alert but NO logging, No count increase
         if (!isExamStarted) {
-            safeAlert(`⚠️ PRE-EXAM SECURITY CHECK:\n\n${type} detected.\n\n${details}\n\nPlease resolve this issue (close VM or disconnect extra monitors) to proceed with the exam.\n\nNote: This is just a warning. No violation has been recorded yet.`);
+            safeAlert("PRE-EXAM SECURITY CHECK", `${type} detected.\n\n${details}\n\nPlease resolve this issue (close VM or disconnect extra monitors) to proceed.`);
             return;
         }
 
@@ -143,7 +139,7 @@ const TakeExam = () => {
         if (newCount > MAX_WARNINGS) {
             terminateExam();
         } else {
-            safeAlert(`⚠️ MALPRACTICE WARNING (${newCount}/${MAX_WARNINGS + 1}):\n\n${type} detected!\n\n${details}\n\nFurther violations will lead to automatic submission.`);
+            safeAlert(`MALPRACTICE WARNING (${newCount}/${MAX_WARNINGS + 1})`, `${type} detected!\n\n${details}\n\nFurther violations will lead to automatic submission.`);
         }
     }, [violationCount, showTerminationModal, isSubmitting, id, isExamStarted]);
 
@@ -239,7 +235,7 @@ const TakeExam = () => {
                 navigate('/student/dashboard');
                 return;
             }
-            safeAlert("Navigating away triggers Auto-Submission.");
+            safeAlert("INCOMPLETE ATTEMPT", "Navigating away triggers Auto-Submission.");
             submitExamData(answersRef.current);
         };
         window.history.pushState(null, null, window.location.href);
@@ -248,8 +244,6 @@ const TakeExam = () => {
         const handleVisibility = () => { if (document.hidden) handleSecurityViolation("TAB_SWITCH"); };
 
         const handleFS = () => {
-            if (isShowingAlert.current) return; // Ignore if browser alert caused exit
-            
             if (!document.fullscreenElement && !showTerminationModal) {
                 setIsFullScreen(false);
                 handleSecurityViolation("EXIT_FULL_SCREEN");
@@ -420,7 +414,7 @@ const TakeExam = () => {
             
             setTestResults(res.data.results);
             setAllTestResults(prev => ({ ...prev, [exam.questions[currentQIndex]._id]: res.data.results }));
-        } catch (e) { alert("Execution Error"); }
+        } catch (e) { safeAlert("EXECUTION ERROR", "Code execution failed. Please try again."); }
         finally { setIsRunning(false); }
     };
 
@@ -463,6 +457,29 @@ const TakeExam = () => {
                     Your response has been successfully recorded. You will be redirected to the dashboard shortly.
                 </p>
                 <button onClick={() => navigate('/student/dashboard')} className="btn btn-success px-5 py-2 btn-hover-scale fw-bold">Great, Thanks!</button>
+            </div>
+        </div>
+    );
+
+    if (showSecurityModal) return (
+        <div className="position-fixed top-0 start-0 w-100 h-100 bg-black bg-opacity-75 d-flex flex-column align-items-center justify-content-center text-center p-5 px-3 z-3 backdrop-blur animate-fade-in" data-bs-theme="dark">
+            <div className="glass-panel p-5 rounded-4 border-danger border-opacity-50 shadow-lg glow-danger animate-slide-up" style={{ maxWidth: '600px' }}>
+                <div className="mb-4 d-inline-block p-4 rounded-circle bg-danger bg-opacity-10 shadow-sm border border-danger border-opacity-20">
+                    <Shield size={80} className="text-danger animate-fade-in" />
+                </div>
+                <h1 className="display-6 fw-bold text-white mb-2">{securityModalTitle}</h1>
+                <p className="text-white-50 mb-4 fs-5" style={{ whiteSpace: 'pre-wrap' }}>
+                    {securityModalMessage}
+                </p>
+                <button 
+                    onClick={() => {
+                        setShowSecurityModal(false);
+                        if (isExamStarted) enterFullScreen();
+                    }} 
+                    className="btn btn-danger px-5 py-2 btn-hover-scale fw-bold shadow-lg"
+                >
+                    I Understand & Re-enter Exam
+                </button>
             </div>
         </div>
     );
