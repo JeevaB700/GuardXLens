@@ -1,9 +1,12 @@
-const axios = require('axios');
+const { GoogleGenerativeAI } = require("@google/generative-ai");
 const Exam = require('../models/Exam');
+
+// Initialize Gemini
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 const executeCode = async (req, res) => {
   const { language, sourceCode, questionId } = req.body;
-  console.log(`\n--- Executing ${language} for Q: ${questionId} ---`);
+  console.log(`\n--- Virtual Execution (${language}) for Q: ${questionId} ---`);
 
   try {
     const exam = await Exam.findOne({ "questions._id": questionId });
@@ -13,19 +16,7 @@ const executeCode = async (req, res) => {
     const testCases = question.testCases || [];
     
     console.log(`Found ${testCases.length} test cases.`);
-
-    const languageMap = {
-      'java': { language: 'java' },
-      'python': { language: 'py' },
-      'c': { language: 'c' },
-      'cpp': { language: 'cpp' },
-    };
-
-    const config = languageMap[language.toLowerCase()];
-    if (!config) {
-        return res.json({ results: [{ status: "Error", message: "Language not supported." }] });
-    }
-
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
     const results = [];
 
     for (let index = 0; index < testCases.length; index++) {
@@ -34,29 +25,37 @@ const executeCode = async (req, res) => {
       const expectedOutput = (tc.output || "").trim();
 
       try {
-        const response = await axios.post('https://api.codex.jaagrav.in/', {
-          language: config.language,
-          code: sourceCode,
-          input: input,
-        });
+        const prompt = `
+          ACT AS A CODE COMPILER AND INTERPRETER.
+          Language: ${language}
+          Code:
+          ${sourceCode}
+          Input (Standard Input):
+          ${input}
+          
+          TASK:
+          1. Execute/Simulate the code with the provided input.
+          2. Return ONLY the output (stdout).
+          3. If there is a syntax error or runtime exception, return the error message starting with "ERROR:".
+          4. NO EXPLANATIONS. NO MARKDOWN. ONLY RAW OUTPUT.
+        `;
 
-        // CodeX returns { status: 200, output: "...", error: "...", ... }
-        const actualOutput = (response.data.output || "").trim();
-        const errorOutput = (response.data.error || "").trim();
+        const result = await model.generateContent(prompt);
+        const rawResponse = result.response.text().trim();
         
-        console.log(`Actual: ${JSON.stringify(actualOutput)}`);
-        if (errorOutput) console.log(`Error: ${JSON.stringify(errorOutput)}`);
+        console.log(`AI Response: ${JSON.stringify(rawResponse)}`);
 
-        if (errorOutput) {
+        if (rawResponse.startsWith("ERROR:")) {
             results.push({
                 caseId: index + 1,
                 status: "Runtime Error",
                 expected: expectedOutput,
-                actual: errorOutput
+                actual: rawResponse.replace("ERROR:", "").trim()
             });
             continue;
         }
 
+        const actualOutput = rawResponse;
         const passed = actualOutput === expectedOutput;
 
         results.push({
@@ -67,15 +66,12 @@ const executeCode = async (req, res) => {
         });
 
       } catch (err) {
-        console.error("CodeX/Network Error:", err.message);
-        if (err.response) {
-            console.error("CodeX Response Error Data:", err.response.data);
-        }
+        console.error("Gemini Execution Error:", err.message);
         results.push({ 
             caseId: index + 1, 
             status: "Runtime Error", 
             expected: expectedOutput,
-            actual: err.message 
+            actual: "AI Execution Failed: " + err.message 
         });
       }
     }
