@@ -3,7 +3,7 @@ import Webcam from 'react-webcam';
 import * as faceapi from '@vladmandic/face-api';
 import * as tf from '@tensorflow/tfjs';
 import * as cocoSsd from '@tensorflow-models/coco-ssd';
-import { Shield, User, Users, UserMinus, Smartphone } from 'lucide-react';
+import { Shield, User, Users, UserMinus, Smartphone, X } from 'lucide-react';
 
 const WebcamProctor = ({ onViolation }) => {
     const webcamRef = useRef(null);
