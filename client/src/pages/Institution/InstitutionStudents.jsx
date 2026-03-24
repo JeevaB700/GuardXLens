@@ -168,31 +168,72 @@ const InstitutionStudents = () => {
                     </div>
 
                     {/* History */}
-                    <h4 className="fw-bold mb-3 d-flex align-items-center gap-2 text-white"><FileText className="text-primary" size={20} /> Activity</h4>
-                    <div className="d-flex flex-column gap-3">
+                    <h4 className="fw-bold mb-4 d-flex align-items-center gap-2 text-white"><FileText className="text-primary" size={24} /> Student Activity History</h4>
+                    <div className="d-flex flex-column gap-4">
                         {results.length === 0 ? (
-                            <div className="text-center py-5 border border-secondary border-opacity-25 border-dashed rounded-3 text-white-50">No exam history.</div>
+                            <div className="text-center py-5 border border-white border-opacity-10 border-dashed rounded-4 text-white-50 glass-panel">No exam history recorded.</div>
                         ) : (
                             results.map((r, idx) => {
                                 const percentage = Math.round((r.score / r.totalMarks) * 100) || 0;
                                 const isPass = percentage >= 40;
+                                const violationCount = r.violationCount || 0;
+                                
                                 return (
-                                    <div key={idx} className={`card glass-panel border-start border-4 shadow-lg animate-slide-up stagger-${(idx % 5) + 1}`} style={{ borderColor: r.isMalpractice ? '#dc3545' : isPass ? '#198754' : '#fd7e14' }}>
-                                        <div className="card-body p-3 d-flex flex-column flex-md-row justify-content-between align-items-center gap-3">
-                                            <div className="w-100">
-                                                <h5 className="fw-bold mb-1 text-white">{r.examId?.title || "Unknown"}</h5>
-                                                {r.isMalpractice && <span className="badge bg-danger bg-opacity-25 text-danger border border-danger border-opacity-25 mb-1"><ShieldAlert size={10} /> Malpractice</span>}
-                                                <small className="d-block text-white-50"><Clock size={12} /> {new Date(r.submittedAt).toLocaleDateString()}</small>
-                                            </div>
-                                            <div className="text-end" style={{ minWidth: '150px' }}>
-                                                <h4 className={`fw-bold mb-0 ${r.isMalpractice ? 'text-danger' : isPass ? 'text-success' : 'text-warning'}`}>{percentage}%</h4>
-                                                <div className="d-flex flex-column align-items-end">
-                                                    <small className="text-white-50">{r.score}/{r.totalMarks}</small>
+                                    <div key={idx} className={`card glass-panel border-0 shadow-lg animate-slide-up stagger-${(idx % 5) + 1} overflow-hidden`}>
+                                        <div className="card-body p-0">
+                                            <div className="d-flex flex-column flex-md-row">
+                                                {/* Left Section: Score Indicator */}
+                                                <div className={`p-4 d-flex flex-column align-items-center justify-content-center border-md-end border-white border-opacity-10 bg-white bg-opacity-5`} style={{ minWidth: '150px' }}>
+                                                    <div className={`h2 fw-bold mb-0 ${r.isMalpractice ? 'text-danger' : isPass ? 'text-success' : 'text-warning'}`}>{percentage}%</div>
+                                                    <small className="text-white-50 fw-bold">{r.score} / {r.totalMarks}</small>
+                                                    <div className={`badge mt-2 ${isPass ? 'bg-success' : 'bg-warning'} bg-opacity-10 text-${isPass ? 'success' : 'warning'} border border-${isPass ? 'success' : 'warning'} border-opacity-25`}>
+                                                        {isPass ? 'PASSED' : 'FAILED'}
+                                                    </div>
+                                                </div>
+
+                                                {/* Middle Section: Exam Info & Security */}
+                                                <div className="p-4 flex-grow-1">
+                                                    <div className="d-flex justify-content-between align-items-start mb-2">
+                                                        <div>
+                                                            <h5 className="fw-bold mb-1 text-white">{r.examId?.title || "Deleted Exam"}</h5>
+                                                            <div className="d-flex align-items-center gap-3 text-white-50 small">
+                                                                <span className="d-flex align-items-center gap-1"><Clock size={12} /> {new Date(r.submittedAt).toLocaleDateString()}</span>
+                                                                <span className="d-flex align-items-center gap-1"><Terminal size={12} /> {r.examId?.subject || 'General'}</span>
+                                                            </div>
+                                                        </div>
+                                                        {r.isMalpractice || violationCount > 0 ? (
+                                                            <div className="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 p-2 d-flex align-items-center gap-1 animate-pulse">
+                                                                <ShieldAlert size={14} /> 
+                                                                <span>{r.isMalpractice ? 'TERMINATED' : `${violationCount} VIOLATIONS`}</span>
+                                                            </div>
+                                                        ) : (
+                                                            <div className="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 p-2 d-flex align-items-center gap-1">
+                                                                <Shield size={14} /> SECURE
+                                                            </div>
+                                                        )}
+                                                    </div>
+
+                                                    {/* Quick Violation Log Summary */}
+                                                    {(r.violationLogs && r.violationLogs.length > 0) && (
+                                                        <div className="mt-3 p-2 rounded bg-black bg-opacity-25 border border-white border-opacity-5">
+                                                            <div className="text-secondary text-uppercase fw-bold mb-1" style={{ fontSize: '0.6rem' }}>Integrity Logs</div>
+                                                            <div className="d-flex flex-wrap gap-2">
+                                                                {r.violationLogs.slice(0, 3).map((log, i) => (
+                                                                    <span key={i} className="text-white-50" style={{ fontSize: '0.65rem' }}>• {log.type.replace(/_/g, ' ')}</span>
+                                                                ))}
+                                                                {r.violationLogs.length > 3 && <span className="text-primary" style={{ fontSize: '0.65rem' }}>+{r.violationLogs.length - 3} more</span>}
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </div>
+
+                                                {/* Right Section: Actions */}
+                                                <div className="p-4 d-flex align-items-center justify-content-center bg-white bg-opacity-5 border-md-start border-white border-opacity-10">
                                                     <button 
                                                         onClick={() => navigate(`/institution/result-view/${selectedStudent._id}/${r._id}`)}
-                                                        className="btn btn-link btn-sm p-0 text-primary text-decoration-none mt-1 hover-text-white"
+                                                        className="btn btn-outline-primary btn-sm px-4 py-2 fw-bold shadow-sm d-flex align-items-center gap-2 hover-bg-primary hover-text-white transition-all"
                                                     >
-                                                        View Answer Sheet
+                                                        Review Submission <ChevronRight size={16} />
                                                     </button>
                                                 </div>
                                             </div>

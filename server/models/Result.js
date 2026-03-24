@@ -15,6 +15,12 @@ const resultSchema = new mongoose.Schema({
   score: { type: Number, default: 0 },
   totalMarks: { type: Number, default: 0 },
   isMalpractice: { type: Boolean, default: false },
+  violationCount: { type: Number, default: 0 },
+  violationLogs: [{
+    type: { type: String },
+    details: { type: String },
+    time: { type: String }
+  }],
 
   submittedAt: { type: Date, default: Date.now }
 });

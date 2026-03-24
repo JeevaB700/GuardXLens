@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Target, Clock, CheckCircle, XCircle, AlertTriangle, ArrowLeft, FileText, ShieldAlert, Award } from 'lucide-react';
+import { Target, Clock, CheckCircle, XCircle, AlertTriangle, ArrowLeft, FileText, ShieldAlert, Award, Terminal, History, ChevronRight, Lock } from 'lucide-react';
 import API_BASE_URL from '../../config';
 
 const AdminResultView = () => {
@@ -61,83 +61,129 @@ const AdminResultView = () => {
     const percentage = Math.round((result.score / result.totalMarks) * 100) || 0;
 
     return (
-        <div className="d-flex flex-column min-vh-100 bg-gradient-dark font-sans text-light animate-fade-in p-4" data-bs-theme="dark">
-            <div className="container" style={{ maxWidth: '1000px' }}>
-                
-                <button onClick={() => navigate(-1)} className="btn btn-link text-decoration-none p-0 mb-4 d-flex align-items-center gap-2 text-white-50 hover-text-white border-0 btn-hover-scale">
-                    <ArrowLeft size={18} /> Back
-                </button>
-
-                <div className="card border-0 shadow-lg mb-4 glass-panel animate-slide-up">
-                    <div className="card-body p-4 d-flex flex-column flex-md-row justify-content-between align-items-start gap-3">
-                        <div>
-                            <span className="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 mb-2">Student Answer Sheet</span>
-                            <h2 className="h4 fw-bold mb-2 text-white">{result.examId?.title}</h2>
-                            <div className="d-flex flex-wrap gap-3 text-white-50 small">
-                                <span className="d-flex align-items-center gap-1"><Clock size={14} className="text-primary" /> {new Date(result.submittedAt).toLocaleString()}</span>
-                                {result.isMalpractice && <span className="text-danger fw-bold d-flex align-items-center gap-1"><ShieldAlert size={14} /> Security Violation Flagged</span>}
+        <div className="d-flex flex-column min-vh-100 bg-gradient-dark font-sans text-light animate-fade-in" data-bs-theme="dark">
+            
+            {/* TOP NAVBAR (Unified with Dashboard) */}
+            <nav className="navbar navbar-dark glass-navbar px-4 py-2 sticky-top flex-shrink-0">
+                <div className="container-fluid d-flex align-items-center justify-content-between flex-nowrap">
+                    <div className="d-flex align-items-center gap-3">
+                        <button onClick={() => navigate(-1)} className="btn btn-link text-white-50 p-1 hover-text-white transition-all shadow-none" title="Back">
+                            <ArrowLeft size={20} />
+                        </button>
+                        <div className="vr text-secondary opacity-50 d-none d-sm-block"></div>
+                        <span className="navbar-brand fw-bold d-none d-sm-flex align-items-center gap-2 mb-0 ms-1">
+                            <div className="bg-white bg-opacity-10 rounded p-1 d-flex align-items-center justify-content-center shadow-lg border border-white border-opacity-10" style={{ width: '28px', height: '28px' }}>
+                                <img src="/logo.png" alt="GX" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
                             </div>
-                        </div>
-                        <div className="text-end">
-                            <div className={`display-4 fw-bold lh-1 ${result.isMalpractice ? 'text-danger' : 'text-primary'}`}>{percentage}%</div>
-                            <span className="text-secondary small text-uppercase fw-bold">{result.score} / {result.totalMarks} Marks</span>
+                            <span className="fs-6">GuardXLens</span>
+                        </span>
+                    </div>
+                    
+                    <div className="text-center flex-grow-1 mx-2">
+                        <h6 className="mb-0 fw-bold border-bottom border-primary border-opacity-25 pb-1 d-inline-block px-3">Answer Sheet Review</h6>
+                    </div>
+
+                    <div className="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 py-2 px-3 d-none d-md-block">
+                        PROCTORING VERIFIED
+                    </div>
+                </div>
+            </nav>
+
+            <div className="container py-4 flex-grow-1" style={{ maxWidth: '1000px' }}>
+                
+                {/* Result Summary Header Card */}
+                <div className="card border-0 shadow-lg mb-5 glass-panel animate-slide-up overflow-hidden">
+                    <div className="card-body p-0">
+                        <div className="d-flex flex-column flex-md-row">
+                            <div className={`p-4 d-flex flex-column align-items-center justify-content-center border-md-end border-white border-opacity-10 bg-white bg-opacity-5`} style={{ minWidth: '180px' }}>
+                                <div className={`display-4 fw-bold mb-0 ${result.isMalpractice ? 'text-danger' : 'text-primary'}`}>{percentage}%</div>
+                                <div className="text-white-50 small fw-bold text-uppercase tracking-wider">Overall Score</div>
+                            </div>
+                            <div className="p-4 flex-grow-1">
+                                <h2 className="h4 fw-bold mb-2 text-white">{result.examId?.title}</h2>
+                                <div className="d-flex flex-wrap gap-4 text-white-50 small mb-3">
+                                    <span className="d-flex align-items-center gap-1"><Clock size={14} className="text-primary" /> {new Date(result.submittedAt).toLocaleString()}</span>
+                                    <span className="d-flex align-items-center gap-1"><Award size={14} className="text-primary" /> {result.score} / {result.totalMarks} Total Marks</span>
+                                </div>
+                                {result.isMalpractice && (
+                                    <div className="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 p-2 px-3 d-flex align-items-center gap-2 animate-pulse w-fit">
+                                        <ShieldAlert size={16} /> 
+                                        <span className="fw-bold">SECURITY VIOLATION DETECTED</span>
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <div className="card border-0 shadow-sm glass-panel animate-slide-up stagger-2">
-                    <div className="card-header bg-transparent border-bottom border-white border-opacity-10 p-3">
-                        <h6 className="fw-bold mb-0 text-white">Detailed Response Analysis</h6>
-                    </div>
-                    <div className="list-group list-group-flush bg-transparent">
+                <div className="mb-4">
+                    <h5 className="fw-bold mb-3 d-flex align-items-center gap-2 text-white">
+                        <FileText size={20} className="text-primary" /> Detailed Response Analysis
+                    </h5>
+                    
+                    <div className="d-flex flex-column gap-4">
                         {detailedAnswers.map((ans, i) => (
-                            <div key={i} className="list-group-item p-4 border-white border-opacity-10 bg-transparent text-light">
-                                <div className="d-flex align-items-start gap-4">
-                                    <div className={`flex-shrink-0 d-flex align-items-center justify-content-center rounded-circle fw-bold fs-5 shadow-sm ${ans.isCorrect ? 'bg-success text-white' : 'bg-danger text-white'}`} style={{ width: '40px', height: '40px' }}>
-                                        {i + 1}
-                                    </div>
-                                    <div className="flex-grow-1">
-                                        <div className="d-flex justify-content-between align-items-start mb-2">
-                                            <div className="w-100">
-                                                <span className={`badge mb-2 ${ans.isCorrect ? 'bg-success-subtle text-success border border-success' : 'bg-danger-subtle text-danger border border-danger'} bg-opacity-10`}>
-                                                    {ans.isCorrect ? 'Correct' : 'Incorrect'}
-                                                </span>
-                                                <h6 className="mb-2 fw-bold text-white lh-base">{ans.questionText}</h6>
-                                            </div>
-                                            <span className="badge bg-dark bg-opacity-50 text-secondary border border-white border-opacity-10 ms-3">{ans.marksAwarded} / {ans.marks}</span>
+                            <div key={i} className="card glass-panel border-0 shadow-sm animate-slide-up stagger-2 overflow-hidden">
+                                <div className="card-body p-3 p-md-4">
+                                    <div className="d-flex align-items-start gap-2 gap-sm-4">
+                                        {/* Question Number Indicator */}
+                                        <div className={`flex-shrink-0 d-flex align-items-center justify-content-center rounded-circle fw-bold fs-5 shadow-sm transition-all ${ans.isCorrect ? 'bg-success bg-gradient' : 'bg-danger bg-gradient'} text-white`} style={{ width: '42px', height: '42px' }}>
+                                            {i + 1}
                                         </div>
 
-                                        <div className="mt-3">
-                                            {ans.type === 'MCQ' ? (
-                                                <div className="d-flex flex-column gap-2">
-                                                    {ans.options.map((opt, idx) => {
-                                                        const studentAnswers = Array.isArray(ans.submittedAnswer) ? ans.submittedAnswer : [ans.submittedAnswer].filter(x => x);
-                                                        const isSelected = studentAnswers.includes(opt);
-                                                        const isCorrectAnswer = (ans.correctAnswers || []).includes(opt);
-                                                        
-                                                        let borderClass = 'border-white border-opacity-10';
-                                                        let bgClass = 'bg-transparent';
-                                                        let textClass = 'text-white-50';
-                                                        if (isSelected && isCorrectAnswer) { borderClass = 'border-success'; bgClass = 'bg-success bg-opacity-10'; textClass = 'text-success fw-bold'; }
-                                                        else if (isSelected && !isCorrectAnswer) { borderClass = 'border-danger'; bgClass = 'bg-danger bg-opacity-10'; textClass = 'text-danger fw-bold'; }
-                                                        else if (!isSelected && isCorrectAnswer) { borderClass = 'border-success border-opacity-50 border-dashed'; textClass = 'text-success opacity-75'; }
+                                        <div className="flex-grow-1 min-w-0">
+                                            {/* Status and Score Row */}
+                                            <div className="d-flex justify-content-between align-items-center mb-2">
+                                                <span className={`badge ${ans.isCorrect ? 'bg-success-subtle text-success border border-success' : 'bg-danger-subtle text-danger border border-danger'} bg-opacity-10 py-1 px-3`}>
+                                                    {ans.isCorrect ? 'Correct' : 'Incorrect'}
+                                                </span>
+                                                <span className="text-white-50 small fw-mono bg-dark bg-opacity-50 px-2 py-1 rounded border border-white border-opacity-5">
+                                                    {ans.marksAwarded} / {ans.marks}
+                                                </span>
+                                            </div>
 
-                                                        return (
-                                                            <div key={idx} className={`p-2 px-3 rounded-3 border d-flex justify-content-between align-items-center ${borderClass} ${bgClass}`}>
-                                                                <span className={`small ${textClass}`}>{opt}</span>
-                                                                {isSelected && (isCorrectAnswer ? <CheckCircle size={16} className="text-success" /> : <XCircle size={16} className="text-danger" />)}
-                                                            </div>
-                                                        );
-                                                    })}
-                                                </div>
-                                            ) : (
-                                                <div className="p-3 bg-dark bg-opacity-50 rounded border border-white border-opacity-10">
-                                                    <small className="text-white-50 text-uppercase fw-bold d-block mb-1">Submitted Answer:</small>
-                                                    <div className="font-monospace text-light small overflow-auto" style={{ whiteSpace: 'pre-wrap', maxHeight: '300px' }}>
-                                                        {ans.submittedAnswer?.toString() || <span className="text-muted fst-italic">No Answer</span>}
+                                            {/* Question Text */}
+                                            <h6 className="mb-4 fw-bold text-white lh-base pe-2" style={{ fontSize: '1.05rem' }}>{ans.questionText}</h6>
+
+                                            {/* Answers Section */}
+                                            <div className="mt-2">
+                                                {ans.type === 'MCQ' ? (
+                                                    <div className="d-flex flex-column gap-2">
+                                                        {ans.options.map((opt, idx) => {
+                                                            const studentAnswers = Array.isArray(ans.submittedAnswer) ? ans.submittedAnswer : [ans.submittedAnswer].filter(x => x);
+                                                            const isSelected = studentAnswers.includes(opt);
+                                                            const isCorrectAnswer = (ans.correctAnswers || []).includes(opt);
+                                                            
+                                                            let borderClass = 'border-white border-opacity-10';
+                                                            let bgClass = 'bg-white bg-opacity-5';
+                                                            let textClass = 'text-white-50';
+                                                            if (isSelected && isCorrectAnswer) { borderClass = 'border-success'; bgClass = 'bg-success bg-opacity-10'; textClass = 'text-success fw-bold'; }
+                                                            else if (isSelected && !isCorrectAnswer) { borderClass = 'border-danger'; bgClass = 'bg-danger bg-opacity-10'; textClass = 'text-danger fw-bold'; }
+                                                            else if (!isSelected && isCorrectAnswer) { borderClass = 'border-success border-opacity-50 border-dashed'; textClass = 'text-success opacity-75'; }
+
+                                                            return (
+                                                                <div key={idx} className={`p-2 px-3 rounded-3 border d-flex justify-content-between align-items-center transition-all ${borderClass} ${bgClass}`}>
+                                                                    <span className={`small ${textClass}`}>{opt}</span>
+                                                                    <div className="d-flex gap-2">
+                                                                        {isCorrectAnswer && <CheckCircle size={14} className="text-success opacity-50" title="Correct Answer" />}
+                                                                        {isSelected && (isCorrectAnswer ? <CheckCircle size={16} className="text-success" /> : <XCircle size={16} className="text-danger" />)}
+                                                                    </div>
+                                                                </div>
+                                                            );
+                                                        })}
                                                     </div>
-                                                </div>
-                                            )}
+                                                ) : (
+                                                    <div className="p-3 bg-black bg-opacity-30 rounded-3 border border-white border-opacity-10">
+                                                        <div className="d-flex justify-content-between align-items-center mb-2">
+                                                            <small className="text-secondary text-uppercase fw-bold tracking-wider" style={{ fontSize: '0.65rem' }}>Submitted Answer</small>
+                                                            <History size={14} className="text-white-25" />
+                                                        </div>
+                                                        <div className="font-monospace text-light small overflow-auto custom-scrollbar" style={{ whiteSpace: 'pre-wrap', maxHeight: '300px', lineHeight: '1.6' }}>
+                                                            {ans.submittedAnswer?.toString() || <span className="text-muted fst-italic opacity-50">No answer provided by student</span>}
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
                                 </div>

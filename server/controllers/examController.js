@@ -204,7 +204,7 @@ const updateExam = async (req, res) => {
 // 7. SUBMIT EXAM
 const submitExam = async (req, res) => {
   try {
-    const { examId, answers, codingResults, studentId, isMalpractice } = req.body;
+    const { examId, answers, codingResults, studentId, isMalpractice, violationCount, violationLogs } = req.body;
     const exam = await Exam.findById(examId);
 
     let totalScore = 0;
@@ -258,7 +258,9 @@ const submitExam = async (req, res) => {
       answers: gradedAnswers,
       score: isMalpractice ? 0 : totalScore,
       totalMarks: exam ? exam.totalMarks : 0,
-      isMalpractice: isMalpractice || false
+      isMalpractice: isMalpractice || false,
+      violationCount: violationCount || 0,
+      violationLogs: violationLogs || []
     });
 
     await newResult.save();

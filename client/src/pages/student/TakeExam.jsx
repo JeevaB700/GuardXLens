@@ -41,6 +41,7 @@ const TakeExam = () => {
     const [showSecurityModal, setShowSecurityModal] = useState(false);
     const [securityModalTitle, setSecurityModalTitle] = useState("");
     const [securityModalMessage, setSecurityModalMessage] = useState("");
+    const [violationLogs, setViolationLogs] = useState([]);
 
     // REF
     const answersRef = useRef(answers);
@@ -95,9 +96,11 @@ const TakeExam = () => {
             await axios.post(`${API_BASE_URL}/api/student/submit`, {
                 examId: id,
                 answers: finalAnswers,
-                codingResults: allTestResults, // PASS TEST RESULTS
+                codingResults: allTestResults, 
                 studentId: user?.id,
-                isMalpractice
+                isMalpractice,
+                violationCount,
+                violationLogs
             }, { headers: { Authorization: `Bearer ${token}` } });
 
             if (document.fullscreenElement) document.exitFullscreen().catch(() => { });
@@ -134,6 +137,8 @@ const TakeExam = () => {
         // ACTIVE EXAM MODE: Log violation and increase count
         const newCount = violationCount + 1;
         setViolationCount(newCount);
+        const logEntry = { type, details, time: new Date().toLocaleTimeString() };
+        setViolationLogs(prev => [...prev, logEntry]);
         logViolation(type, details || `Count: ${newCount}`);
 
         if (newCount > MAX_WARNINGS) {
@@ -437,8 +442,17 @@ const TakeExam = () => {
                 </p>
                 <div className="d-flex flex-column gap-3">
                     <div className="p-3 rounded bg-white bg-opacity-5 border border-white border-opacity-10 text-start small">
-                        <div className="text-secondary text-uppercase fw-bold mb-1" style={{ fontSize: '0.65rem' }}>Security Log Summary</div>
-                        <div className="text-white opacity-75">Flagged for suspicious activity (Tab switch/Fullscreen exit).</div>
+                        <div className="text-secondary text-uppercase fw-bold mb-2" style={{ fontSize: '0.65rem' }}>Security Log Summary</div>
+                        <div className="d-flex flex-column gap-2 max-vh-25 overflow-auto custom-scrollbar pe-2">
+                            {violationLogs.length > 0 ? violationLogs.map((log, i) => (
+                                <div key={i} className="d-flex justify-content-between align-items-center border-bottom border-white border-opacity-5 pb-1 last-border-0">
+                                    <span className="text-danger-emphasis fw-semibold" style={{ fontSize: '0.75rem' }}>{log.type.replace(/_/g, ' ')}</span>
+                                    <span className="text-white-50" style={{ fontSize: '0.65rem' }}>{log.time}</span>
+                                </div>
+                            )) : (
+                                <div className="text-white opacity-75">Flagged for suspicious activity (Tab switch/Fullscreen exit).</div>
+                            )}
+                        </div>
                     </div>
                     <button onClick={() => navigate('/student/dashboard')} className="btn btn-secondary px-4 py-2 btn-hover-scale fw-bold">Return to Dashboard</button>
                 </div>

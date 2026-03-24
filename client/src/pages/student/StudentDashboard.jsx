@@ -63,25 +63,25 @@ const StudentDashboard = () => {
 
             {/* NAVBAR */}
             <nav className="navbar navbar-expand-lg navbar-dark glass-navbar px-4 py-3 sticky-top">
-                <div className="container-fluid">
-                    <span className="navbar-brand fw-bold d-flex align-items-center gap-2">
-                        <div className="bg-white bg-opacity-10 rounded p-1 d-flex align-items-center justify-content-center shadow-lg border border-white border-opacity-10" style={{ width: '36px', height: '36px' }}>
+                <div className="container-fluid d-flex align-items-center justify-content-between flex-nowrap">
+                    <span className="navbar-brand fw-bold d-flex align-items-center gap-2 mb-0">
+                        <div className="bg-white bg-opacity-10 rounded p-1 d-flex align-items-center justify-content-center shadow-lg border border-white border-opacity-10" style={{ width: '32px', height: '32px' }}>
                             <img src="/logo.png" alt="GX" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
                         </div>
-                        GuardXLens
+                        <span className="fs-5">GuardXLens</span>
                     </span>
 
-                    <div className="d-flex align-items-center gap-4">
+                    <div className="d-flex align-items-center gap-2 gap-md-4">
                         <div className="d-none d-md-flex flex-column text-end">
                             <span className="text-white fw-medium small">{user.name}</span>
                             <span className="text-white-50 small" style={{ fontSize: '0.75rem' }}>{user.email}</span>
                         </div>
                         <div className="vr text-secondary d-none d-md-block opacity-50"></div>
-                        <button onClick={() => navigate('/student/results')} className="btn btn-outline-light btn-sm d-flex align-items-center gap-2 border-opacity-25 btn-hover-scale btn-hover-danger">
-                            <Award size={16} /> Results
+                        <button onClick={() => navigate('/student/results')} className="btn btn-outline-light btn-sm d-flex align-items-center gap-2 border-opacity-25 py-1 px-2 px-md-3">
+                            <Award size={14} className="d-none d-sm-block" /> <span style={{ fontSize: '0.8rem' }}>Results</span>
                         </button>
-                        <button onClick={() => { sessionStorage.clear(); navigate('/login'); }} className="btn btn-link text-white-50 p-0 btn-hover-danger-soft transition-all" title="Logout">
-                            <LogOut size={20} />
+                        <button onClick={() => { sessionStorage.clear(); navigate('/login'); }} className="btn btn-link text-white-50 p-1 hover-text-danger" title="Logout">
+                            <LogOut size={18} />
                         </button>
                     </div>
                 </div>
