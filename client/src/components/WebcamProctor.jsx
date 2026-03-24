@@ -119,20 +119,65 @@ const WebcamProctor = ({ onViolation }) => {
         return () => clearInterval(interval);
     }, [modelsLoaded, noFaceCounter, onViolation, objectModel]);
 
+    const [isMinimized, setIsMinimized] = useState(false);
+    const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
+    useEffect(() => {
+        const handleResize = () => setIsMobile(window.innerWidth < 768);
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
+
+    if (isMinimized) {
+        return (
+            <div 
+                className="position-fixed z-3 shadow-lg cursor-pointer animate-fade-in" 
+                style={{ 
+                    bottom: isMobile ? '80px' : '20px', 
+                    right: '20px',
+                    width: '40px',
+                    height: '40px'
+                }}
+                onClick={() => setIsMinimized(false)}
+            >
+                <div className="w-100 h-100 rounded-circle bg-primary d-flex align-items-center justify-content-center text-white">
+                    <Shield size={20} />
+                </div>
+            </div>
+        );
+    }
+
     return (
-        <div className="position-fixed bottom-0 end-0 p-3 z-3" style={{ width: '200px' }}>
-            <div className="glass-panel rounded-3 overflow-hidden border border-white border-opacity-10 shadow-lg">
+        <div 
+            className="position-fixed z-3 p-2 animate-fade-in" 
+            style={{ 
+                width: isMobile ? '140px' : '200px',
+                // On mobile, position it at the top-right (below navbar)
+                // On desktop, keep it at bottom-right
+                top: isMobile ? '70px' : 'auto',
+                bottom: isMobile ? 'auto' : '0',
+                right: '0',
+                transition: 'all 0.3s ease'
+            }}
+        >
+            <div className="glass-panel rounded-3 overflow-hidden border border-white border-opacity-10 shadow-lg position-relative">
+                <button 
+                    className="btn btn-sm p-1 position-absolute top-0 end-0 z-3 text-white-50 hover-text-white bg-dark bg-opacity-25"
+                    onClick={() => setIsMinimized(true)}
+                    style={{ border: 'none' }}
+                >
+                    <X size={14} />
+                </button>
                 <div className="bg-dark bg-opacity-50 p-2 d-flex align-items-center justify-content-between">
                     <div className="d-flex align-items-center gap-1">
                         <Shield size={12} className={modelsLoaded ? "text-success" : "text-warning"} />
                         <span style={{ fontSize: '0.65rem' }} className="fw-bold text-white-50 uppercase tracking-tighter">
-                            {modelsLoaded ? "Secure Proctor" : "Initializing..."}
+                            {modelsLoaded ? "Secure" : "Init..."}
                         </span>
                     </div>
-                    {detecting && <div className="spinner-grow spinner-grow-sm text-primary" style={{ width: '8px', height: '8px' }}></div>}
                 </div>
 
-                <div className="position-relative bg-black" style={{ height: '120px' }}>
+                <div className="position-relative bg-black" style={{ height: isMobile ? '90px' : '120px' }}>
                     <Webcam
                         audio={false}
                         ref={webcamRef}
