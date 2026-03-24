@@ -153,14 +153,22 @@ const TakeExam = () => {
 
     const checkScreenConfiguration = useCallback(async () => {
         try {
+            // Priority 1: Modern Multi-Screen Window Management API
             if ('getScreenDetails' in window) {
                 const details = await window.getScreenDetails();
                 if (details.screens.length > 1) {
                     handleSecurityViolation("MULTI_MONITOR_DETECTED");
                     return false;
                 }
-            } else if (window.screen.availWidth > window.innerWidth * 1.5) {
-                // handleSecurityViolation("SCREEN_SPANNING_DETECTED");
+            } 
+            // Priority 2: Simple Screen Extended check (Chrome 100+)
+            else if (window.screen.isExtended) {
+                handleSecurityViolation("MULTI_MONITOR_DETECTED");
+                return false;
+            }
+            // Priority 3: Geometry heuristic (Fallback)
+            else if (window.screen.width > window.innerWidth * 1.5 && !window.screen.isExtended) {
+                 // handleSecurityViolation("SCREEN_SPANNING_DETECTED");
             }
             return true;
         } catch (e) { return true; }
