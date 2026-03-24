@@ -67,12 +67,12 @@ const AdminResultView = () => {
             <nav className="navbar navbar-dark glass-navbar px-4 py-2 sticky-top flex-shrink-0">
                 <div className="container-fluid d-flex align-items-center justify-content-between flex-nowrap">
                     <div className="d-flex align-items-center gap-3">
-                        <button onClick={() => navigate(-1)} className="btn btn-link text-white-50 p-1 hover-text-white transition-all shadow-none" title="Back">
+                        <button onClick={() => navigate(`/institution/students?id=${studentId}`)} className="btn btn-link text-white-50 p-1 hover-text-white transition-all shadow-none" title="Back">
                             <ArrowLeft size={20} />
                         </button>
                         <div className="vr text-secondary opacity-50 d-none d-sm-block"></div>
                         <span className="navbar-brand fw-bold d-none d-sm-flex align-items-center gap-2 mb-0 ms-1">
-                            <div className="bg-white bg-opacity-10 rounded p-1 d-flex align-items-center justify-content-center shadow-lg border border-white border-opacity-10" style={{ width: '28px', height: '28px' }}>
+                            <div className="bg-dark bg-opacity-50 rounded p-1 d-flex align-items-center justify-content-center shadow-lg border border-white border-opacity-10" style={{ width: '28px', height: '28px' }}>
                                 <img src="/logo.png" alt="GX" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
                             </div>
                             <span className="fs-6">GuardXLens</span>
@@ -92,10 +92,10 @@ const AdminResultView = () => {
             <div className="container py-4 flex-grow-1" style={{ maxWidth: '1000px' }}>
                 
                 {/* Result Summary Header Card */}
-                <div className="card border-0 shadow-lg mb-5 glass-panel animate-slide-up overflow-hidden">
+                <div className="card border-0 shadow-lg mb-4 glass-panel animate-slide-up overflow-hidden">
                     <div className="card-body p-0">
                         <div className="d-flex flex-column flex-md-row">
-                            <div className={`p-4 d-flex flex-column align-items-center justify-content-center border-md-end border-white border-opacity-10 bg-white bg-opacity-5`} style={{ minWidth: '180px' }}>
+                            <div className={`p-4 d-flex flex-column align-items-center justify-content-center border-md-end border-white border-opacity-5 bg-black bg-opacity-20`} style={{ minWidth: '180px' }}>
                                 <div className={`display-4 fw-bold mb-0 ${result.isMalpractice ? 'text-danger' : 'text-primary'}`}>{percentage}%</div>
                                 <div className="text-white-50 small fw-bold text-uppercase tracking-wider">Overall Score</div>
                             </div>
@@ -121,7 +121,7 @@ const AdminResultView = () => {
                         <FileText size={20} className="text-primary" /> Detailed Response Analysis
                     </h5>
                     
-                    <div className="d-flex flex-column gap-4">
+                    <div className="d-flex flex-column gap-3">
                         {detailedAnswers.map((ans, i) => (
                             <div key={i} className="card glass-panel border-0 shadow-sm animate-slide-up stagger-2 overflow-hidden">
                                 <div className="card-body p-3 p-md-4">
@@ -134,16 +134,16 @@ const AdminResultView = () => {
                                         <div className="flex-grow-1 min-w-0">
                                             {/* Status and Score Row */}
                                             <div className="d-flex justify-content-between align-items-center mb-2">
-                                                <span className={`badge ${ans.isCorrect ? 'bg-success-subtle text-success border border-success' : 'bg-danger-subtle text-danger border border-danger'} bg-opacity-10 py-1 px-3`}>
+                                                <span className={`badge ${ans.isCorrect ? 'bg-success-subtle text-success border border-success' : 'bg-danger-subtle text-danger border border-danger'} bg-opacity-10 py-1 px-3`} style={{ fontSize: '0.7rem' }}>
                                                     {ans.isCorrect ? 'Correct' : 'Incorrect'}
                                                 </span>
-                                                <span className="text-white-50 small fw-mono bg-dark bg-opacity-50 px-2 py-1 rounded border border-white border-opacity-5">
+                                                <span className="text-white-50 small fw-mono bg-black bg-opacity-50 px-2 py-1 rounded border border-white border-opacity-5">
                                                     {ans.marksAwarded} / {ans.marks}
                                                 </span>
                                             </div>
 
                                             {/* Question Text */}
-                                            <h6 className="mb-4 fw-bold text-white lh-base pe-2" style={{ fontSize: '1.05rem' }}>{ans.questionText}</h6>
+                                            <h6 className="mb-3 fw-bold text-white lh-base pe-2" style={{ fontSize: '1rem' }}>{ans.questionText}</h6>
 
                                             {/* Answers Section */}
                                             <div className="mt-2">
@@ -154,12 +154,14 @@ const AdminResultView = () => {
                                                             const isSelected = studentAnswers.includes(opt);
                                                             const isCorrectAnswer = (ans.correctAnswers || []).includes(opt);
                                                             
-                                                            let borderClass = 'border-white border-opacity-10';
-                                                            let bgClass = 'bg-white bg-opacity-5';
+                                                            let borderClass = 'border-white border-opacity-5';
+                                                            let bgClass = 'bg-black bg-opacity-20';
                                                             let textClass = 'text-white-50';
                                                             if (isSelected && isCorrectAnswer) { borderClass = 'border-success'; bgClass = 'bg-success bg-opacity-10'; textClass = 'text-success fw-bold'; }
                                                             else if (isSelected && !isCorrectAnswer) { borderClass = 'border-danger'; bgClass = 'bg-danger bg-opacity-10'; textClass = 'text-danger fw-bold'; }
                                                             else if (!isSelected && isCorrectAnswer) { borderClass = 'border-success border-opacity-50 border-dashed'; textClass = 'text-success opacity-75'; }
+
+                                                            if (!opt) return null; // Don't render empty options
 
                                                             return (
                                                                 <div key={idx} className={`p-2 px-3 rounded-3 border d-flex justify-content-between align-items-center transition-all ${borderClass} ${bgClass}`}>
@@ -173,13 +175,13 @@ const AdminResultView = () => {
                                                         })}
                                                     </div>
                                                 ) : (
-                                                    <div className="p-3 bg-black bg-opacity-30 rounded-3 border border-white border-opacity-10">
+                                                    <div className="p-3 bg-black bg-opacity-40 rounded-3 border border-white border-opacity-5">
                                                         <div className="d-flex justify-content-between align-items-center mb-2">
                                                             <small className="text-secondary text-uppercase fw-bold tracking-wider" style={{ fontSize: '0.65rem' }}>Submitted Answer</small>
                                                             <History size={14} className="text-white-25" />
                                                         </div>
                                                         <div className="font-monospace text-light small overflow-auto custom-scrollbar" style={{ whiteSpace: 'pre-wrap', maxHeight: '300px', lineHeight: '1.6' }}>
-                                                            {ans.submittedAnswer?.toString() || <span className="text-muted fst-italic opacity-50">No answer provided by student</span>}
+                                                            {ans.submittedAnswer?.toString() || <span className="text-muted fst-italic opacity-50 text-uppercase tracking-tighter" style={{ fontSize: '0.7rem' }}>No answer provided</span>}
                                                         </div>
                                                     </div>
                                                 )}

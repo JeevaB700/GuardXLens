@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { User, ChevronRight, FileText, AlertTriangle, X, Clock, ShieldAlert, ArrowLeft, GraduationCap, TrendingUp, CheckCircle, Search, Shield, Terminal } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import API_BASE_URL from '../../config';
 
 const InstitutionStudents = () => {
@@ -15,6 +15,7 @@ const InstitutionStudents = () => {
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
 
     useEffect(() => {
         const fetchData = async () => {
@@ -25,13 +26,24 @@ const InstitutionStudents = () => {
                     axios.get(`${API_BASE_URL}/api/auth/my-students`, config),
                     axios.get(`${API_BASE_URL}/api/admin/malpractice-students`, config)
                 ]);
-                if (studRes.data.success) setStudents(studRes.data.students || []);
-                if (malRes.data.success) setMalpracticeList(malRes.data.studentIds || []);
+                
+                const allStudents = studRes.data.students || [];
+                setStudents(allStudents);
+                setMalpracticeList(malRes.data.studentIds || []);
+
+                // STATE RECOVERY: Check if a student ID is in the URL
+                const targetId = searchParams.get('id');
+                if (targetId) {
+                    const student = allStudents.find(s => s._id === targetId);
+                    if (student) {
+                        handleStudentClick(student);
+                    }
+                }
             } catch (error) { console.error(error); }
             finally { setLoading(false); }
         };
         fetchData();
-    }, []);
+    }, [searchParams]);
 
     const handleStudentClick = async (student) => {
         setSelectedStudent(student);
@@ -121,20 +133,20 @@ const InstitutionStudents = () => {
 
                     {/* Profile Card */}
                     <div className="card glass-panel border-0 shadow-lg mb-4 animate-slide-up stagger-1">
-                        <div className="card-body p-4 p-md-5">
+                        <div className="card-body p-4">
                             <div className="d-flex flex-column flex-md-row gap-4 align-items-center align-items-md-start">
-                                <div className="rounded-circle bg-primary bg-opacity-75 d-flex align-items-center justify-content-center text-white display-4 fw-bold shadow-sm" style={{ width: '100px', height: '100px' }}>
+                                <div className="rounded-circle bg-primary bg-opacity-25 d-flex align-items-center justify-content-center text-primary h3 fw-bold shadow-sm border border-primary border-opacity-25" style={{ width: '64px', height: '64px' }}>
                                     {selectedStudent.name?.charAt(0) || "S"}
                                 </div>
                                 <div className="text-center text-md-start">
-                                    <h2 className="fw-bold mb-1 text-white">{selectedStudent.name}</h2>
-                                    <p className="text-white-50 mb-3 d-flex align-items-center justify-content-center justify-content-md-start gap-2">
-                                        <User size={16} className="text-primary" /> {selectedStudent.email}
-                                    </p>
-                                    <div className="d-flex gap-2 justify-content-center justify-content-md-start">
-                                        <span className="badge bg-secondary bg-opacity-25 text-secondary border border-secondary border-opacity-25">ID: {selectedStudent._id?.slice(-6).toUpperCase()}</span>
+                                    <h2 className="h4 fw-bold mb-1 text-white">{selectedStudent.name}</h2>
+                                    <div className="d-flex flex-wrap gap-3 justify-content-center justify-content-md-start align-items-center mt-2">
+                                        <span className="text-white-50 small d-flex align-items-center gap-2">
+                                            <User size={14} className="text-primary" /> {selectedStudent.email}
+                                        </span>
+                                        <span className="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25">ID: {selectedStudent._id?.slice(-6).toUpperCase()}</span>
                                         {malpracticeList.includes(selectedStudent._id) &&
-                                            <span className="badge bg-danger bg-opacity-25 text-danger border border-danger border-opacity-25 d-flex align-items-center gap-1"><ShieldAlert size={12} /> FLAGGED</span>
+                                            <span className="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 d-flex align-items-center gap-1"><ShieldAlert size={12} /> FLAGGED</span>
                                         }
                                     </div>
                                 </div>
@@ -143,103 +155,58 @@ const InstitutionStudents = () => {
                     </div>
 
                     {/* Stats */}
-                    <div className="row g-4 mb-4">
-                        <div className="col-md-4 animate-slide-up stagger-2">
-                            <div className="card glass-panel border-0 shadow-lg h-100">
-                                <div className="card-body p-4 d-flex align-items-center gap-3">
-                                    <div className="p-3 rounded-3 bg-info bg-opacity-25 text-info shadow-sm"><GraduationCap size={28} /></div>
-                                    <div><small className="text-white-50 fw-bold text-uppercase">Exams</small><h3 className="h4 fw-bold mb-0 text-white">{stats.total}</h3></div>
+                    <div className="row g-3 mb-4">
+                        {[
+                            { label: 'Total Exams', val: stats.total, icon: GraduationCap, color: 'info' },
+                            { label: 'Avg Score', val: `${stats.avg}%`, icon: TrendingUp, color: 'primary' },
+                            { label: 'Passed', val: `${stats.passed} / ${stats.total}`, icon: CheckCircle, color: 'success' }
+                        ].map((s, i) => (
+                            <div key={i} className="col-4 animate-slide-up" style={{ animationDelay: `${(i + 1) * 0.1}s` }}>
+                                <div className="card glass-panel border-0 shadow-sm h-100">
+                                    <div className="card-body p-3 text-center">
+                                        <div className={`text-${s.color} mb-1`}><s.icon size={20} /></div>
+                                        <div className="h5 fw-bold mb-0 text-white">{s.val}</div>
+                                        <div className="text-white-50" style={{ fontSize: '0.65rem' }}>{s.label}</div>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                        <div className="col-md-4 animate-slide-up stagger-3">
-                            <div className="card glass-panel border-0 shadow-lg h-100">
-                                <div className="card-body p-4 d-flex align-items-center gap-3">
-                                    <div className="p-3 rounded-3 bg-primary bg-opacity-25 text-primary shadow-sm"><TrendingUp size={28} /></div>
-                                    <div><small className="text-white-50 fw-bold text-uppercase">Avg. Score</small><h3 className="h4 fw-bold mb-0 text-white">{stats.avg}%</h3></div>
-                                </div>
-                            </div>
-                        </div>
-                        <div className="col-md-4 animate-slide-up stagger-4">
-                            <div className="card glass-panel border-0 shadow-lg h-100">
-                                <div className="card-body p-4 d-flex align-items-center gap-3">
-                                    <div className="p-3 rounded-3 bg-success bg-opacity-25 text-success shadow-sm"><CheckCircle size={28} /></div>
-                                    <div><small className="text-white-50 fw-bold text-uppercase">Passed</small><h3 className="h4 fw-bold mb-0 text-white">{stats.passed} <span className="fs-6 text-white-50 fw-normal">/ {stats.total}</span></h3></div>
-                                </div>
-                            </div>
-                        </div>
+                        ))}
                     </div>
 
                     {/* History */}
-                    <h4 className="fw-bold mb-4 d-flex align-items-center gap-2 text-white"><FileText className="text-primary" size={24} /> Student Activity History</h4>
-                    <div className="d-flex flex-column gap-4">
+                    <h5 className="fw-bold mb-3 d-flex align-items-center gap-2 text-white"><FileText className="text-primary" size={20} /> Activity History</h5>
+                    <div className="d-flex flex-column gap-2">
                         {results.length === 0 ? (
-                            <div className="text-center py-5 border border-white border-opacity-10 border-dashed rounded-4 text-white-50 glass-panel">No exam history recorded.</div>
+                            <div className="text-center py-5 border border-white border-opacity-5 border-dashed rounded-3 text-white-50 glass-panel">No exam history recorded.</div>
                         ) : (
                             results.map((r, idx) => {
                                 const percentage = Math.round((r.score / (r.totalMarks || 1)) * 100) || 0;
                                 const isPass = percentage >= 40;
-                                const violationCount = r.violationCount || 0;
                                 
                                 return (
-                                    <div key={idx} className={`card glass-panel border-0 shadow-lg animate-slide-up stagger-${(idx % 5) + 1} overflow-hidden`}>
-                                        <div className="card-body p-0">
-                                            <div className="d-flex flex-column flex-md-row">
-                                                {/* Left Section: Score Indicator */}
-                                                <div className={`p-4 d-flex flex-column align-items-center justify-content-center border-md-end border-white border-opacity-10 bg-white bg-opacity-5`} style={{ minWidth: '150px' }}>
-                                                    <div className={`h2 fw-bold mb-0 ${r.isMalpractice ? 'text-danger' : isPass ? 'text-success' : 'text-warning'}`}>{percentage}%</div>
-                                                    <small className="text-white-50 fw-bold">{r.score} / {r.totalMarks}</small>
-                                                    <div className={`badge mt-2 ${isPass ? 'bg-success' : 'bg-warning'} bg-opacity-10 text-${isPass ? 'success' : 'warning'} border border-${isPass ? 'success' : 'warning'} border-opacity-25`}>
-                                                        {isPass ? 'PASSED' : 'FAILED'}
-                                                    </div>
+                                    <div 
+                                        key={idx} 
+                                        onClick={() => navigate(`/institution/result-view/${selectedStudent._id}/${r._id}`)}
+                                        className="card glass-panel border border-white border-opacity-5 shadow-sm hover-bg-light-5 cursor-pointer transition-all animate-slide-up"
+                                    >
+                                        <div className="card-body p-3 d-flex align-items-center justify-content-between">
+                                            <div className="d-flex align-items-center gap-3 overflow-hidden">
+                                                <div className={`p-2 rounded bg-${isPass ? 'success' : 'danger'} bg-opacity-10 text-${isPass ? 'success' : 'danger'} border border-${isPass ? 'success' : 'danger'} border-opacity-10 d-flex flex-column align-items-center justify-content-center`} style={{ minWidth: '50px', height: '50px' }}>
+                                                    <span className="fw-bold lh-1">{percentage}%</span>
+                                                    <span style={{ fontSize: '0.6rem' }}>Score</span>
                                                 </div>
-
-                                                {/* Middle Section: Exam Info & Security */}
-                                                <div className="p-4 flex-grow-1">
-                                                    <div className="d-flex justify-content-between align-items-start mb-2">
-                                                        <div>
-                                                            <h5 className="fw-bold mb-1 text-white">{r.examId?.title || "Deleted Exam"}</h5>
-                                                            <div className="d-flex align-items-center gap-3 text-white-50 small">
-                                                                <span className="d-flex align-items-center gap-1"><Clock size={12} /> {new Date(r.submittedAt).toLocaleDateString()}</span>
-                                                                <span className="d-flex align-items-center gap-1"><Terminal size={12} /> {r.examId?.subject || 'General'}</span>
-                                                            </div>
-                                                        </div>
-                                                        {r.isMalpractice || violationCount > 0 ? (
-                                                            <div className="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 p-2 d-flex align-items-center gap-1 animate-pulse">
-                                                                <ShieldAlert size={14} /> 
-                                                                <span>{r.isMalpractice ? 'TERMINATED' : `${violationCount} VIOLATIONS`}</span>
-                                                            </div>
-                                                        ) : (
-                                                            <div className="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 p-2 d-flex align-items-center gap-1">
-                                                                <Shield size={14} /> SECURE
-                                                            </div>
+                                                <div className="text-truncate">
+                                                    <h6 className="fw-bold mb-0 text-white">{r.examId?.title || "Deleted Exam"}</h6>
+                                                    <div className="d-flex align-items-center gap-3 text-white-50" style={{ fontSize: '0.75rem' }}>
+                                                        <span>{new Date(r.submittedAt).toLocaleDateString()}</span>
+                                                        <span className="d-flex align-items-center gap-1"><Terminal size={10} /> {r.examId?.subject || 'CS'}</span>
+                                                        {(r.isMalpractice || (r.violationCount > 0)) && (
+                                                            <span className="text-danger fw-bold d-flex align-items-center gap-1"><ShieldAlert size={10} /> FLAG</span>
                                                         )}
                                                     </div>
-
-                                                    {/* Quick Violation Log Summary */}
-                                                    {(r.violationLogs && r.violationLogs.length > 0) && (
-                                                        <div className="mt-3 p-2 rounded bg-black bg-opacity-25 border border-white border-opacity-5">
-                                                            <div className="text-secondary text-uppercase fw-bold mb-1" style={{ fontSize: '0.6rem' }}>Integrity Logs</div>
-                                                            <div className="d-flex flex-wrap gap-2">
-                                                                {r.violationLogs.slice(0, 3).map((log, i) => (
-                                                                    <span key={i} className="text-white-50" style={{ fontSize: '0.65rem' }}>• {(log.type || "Violation").replace(/_/g, ' ')}</span>
-                                                                ))}
-                                                                {r.violationLogs.length > 3 && <span className="text-primary" style={{ fontSize: '0.65rem' }}>+{r.violationLogs.length - 3} more</span>}
-                                                            </div>
-                                                        </div>
-                                                    )}
-                                                </div>
-
-                                                {/* Right Section: Actions */}
-                                                <div className="p-4 d-flex align-items-center justify-content-center bg-white bg-opacity-5 border-md-start border-white border-opacity-10">
-                                                    <button 
-                                                        onClick={() => navigate(`/institution/result-view/${selectedStudent._id}/${r._id}`)}
-                                                        className="btn btn-outline-primary btn-sm px-4 py-2 fw-bold shadow-sm d-flex align-items-center gap-2 hover-bg-primary hover-text-white transition-all"
-                                                    >
-                                                        Review Submission <ChevronRight size={16} />
-                                                    </button>
                                                 </div>
                                             </div>
+                                            <ChevronRight size={18} className="text-white-25" />
                                         </div>
                                     </div>
                                 );
@@ -266,17 +233,17 @@ const InstitutionStudents = () => {
                         </div>
                     </div>
 
-                    <div className="row g-3">
+                    <div className="row g-2">
                         {filteredStudents.length === 0 ? <p className="text-center text-white-50 py-5">No students found.</p> :
                             filteredStudents.map((student, i) => (
                                 <div key={student._id} className={`col-12 animate-slide-up stagger-${(i % 5) + 1}`}>
                                     <div
                                         onClick={() => handleStudentClick(student)}
-                                        className="card glass-panel border border-white border-opacity-10 shadow-sm hover-shadow-lg cursor-pointer transition-all hover-lift"
+                                        className="card glass-panel border border-white border-opacity-5 shadow-sm hover-shadow-lg cursor-pointer transition-all"
                                     >
                                         <div className="card-body p-3 d-flex justify-content-between align-items-center">
                                             <div className="d-flex align-items-center gap-3 overflow-hidden">
-                                                <div className="rounded-circle bg-primary bg-opacity-25 d-flex align-items-center justify-content-center fw-bold text-primary border border-primary border-opacity-25" style={{ width: '48px', height: '48px' }}>
+                                                <div className="rounded-circle bg-primary bg-opacity-10 d-flex align-items-center justify-content-center fw-bold text-primary border border-primary border-opacity-10" style={{ width: '42px', height: '42px' }}>
                                                     {student.name?.charAt(0) || "S"}
                                                 </div>
                                                 <div className="text-truncate">
@@ -286,11 +253,11 @@ const InstitutionStudents = () => {
                                             </div>
                                             <div className="d-flex align-items-center gap-2">
                                                 {malpracticeList.includes(student._id) && (
-                                                    <button onClick={(e) => handleAlertClick(e, student)} className="btn btn-sm btn-outline-danger border-opacity-50 bg-danger bg-opacity-10 text-danger btn-hover-scale">
-                                                        <ShieldAlert size={18} />
+                                                    <button onClick={(e) => handleAlertClick(e, student)} className="btn btn-sm btn-outline-danger border-0 bg-danger bg-opacity-10 text-danger p-2 rounded-circle">
+                                                        <ShieldAlert size={16} />
                                                     </button>
                                                 )}
-                                                <ChevronRight size={18} className="text-white-50" />
+                                                <ChevronRight size={18} className="text-white-25" />
                                             </div>
                                         </div>
                                     </div>
