@@ -115,13 +115,14 @@ const TakeExam = () => {
     const safeAlert = (msg) => {
         isShowingAlert.current = true;
         alert(msg);
-        // Delay resetting to allow FS event to settle
+        
+        // Immediately after alert dismissal (User Gesture)
+        if (isExamStarted && !document.fullscreenElement && !showTerminationModal) {
+            requestFullScreen(); 
+        }
+
         setTimeout(() => { 
             isShowingAlert.current = false; 
-            // Re-enter fullscreen if exam is active and was exited by the alert
-            if (isExamStarted && !document.fullscreenElement && !showTerminationModal) {
-                enterFullScreen();
-            }
         }, 500);
     };
 
@@ -211,12 +212,7 @@ const TakeExam = () => {
         };
     }, [handleSecurityViolation, checkDeviceIntegrity]);
 
-    const enterFullScreen = async () => {
-        const isDeviceSecure = checkDeviceIntegrity();
-        const isScreenSecure = await checkScreenConfiguration();
-
-        if (!isDeviceSecure || !isScreenSecure) return;
-
+    const requestFullScreen = () => {
         const elem = document.documentElement;
         if (elem.requestFullscreen) {
             elem.requestFullscreen()
@@ -226,6 +222,14 @@ const TakeExam = () => {
                 })
                 .catch(() => { });
         }
+    };
+
+    const enterFullScreen = async () => {
+        const isDeviceSecure = checkDeviceIntegrity();
+        const isScreenSecure = await checkScreenConfiguration();
+
+        if (!isDeviceSecure || !isScreenSecure) return;
+        requestFullScreen();
     };
 
     useEffect(() => {
