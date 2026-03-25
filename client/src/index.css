@@ -13,27 +13,32 @@ body {
 }
 
 
+:root {
+  --gx-neon: #84cc16;
+  --gx-neon-rgb: 132, 204, 22;
+  --gx-dark: #0f172a;
+}
+
 /* --- Dark Aesthetic Utilities --- */
 .bg-gradient-dark {
-  /* Deep modern dark gradient (Slate/Blue-hued) */
-  background: radial-gradient(circle at top right, #1e293b, #0f172a);
+  /* Slightly transparent so the cyber background shows through */
+  background: radial-gradient(circle at top right, rgba(30, 41, 59, 0.7), rgba(15, 23, 42, 0.9));
   background-attachment: fixed;
   min-height: 100vh;
 }
 
 .glass-panel {
-  background: rgba(33, 37, 41, 0.6) !important;
-  /* Bootstrap gray-900 with opacity */
+  background: rgba(15, 23, 42, 0.6) !important;
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.08) !important;
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(132, 204, 22, 0.15) !important;
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
 }
 
 .glass-navbar {
-  background: rgba(13, 17, 23, 0.8) !important;
+  background: rgba(10, 15, 24, 0.8) !important;
   backdrop-filter: blur(10px);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid rgba(132, 204, 22, 0.2);
 }
 
 /* Hover Effects for Dark Theme */
@@ -138,7 +143,7 @@ body {
 }
 
 .hover-glow:hover {
-  box-shadow: 0 0 20px rgba(59, 130, 246, 0.5);
+  box-shadow: 0 0 20px rgba(132, 204, 22, 0.6);
 }
 
 /* ========== DARK FORM CONTROLS ========== */
@@ -151,9 +156,9 @@ body {
 
 .form-control-dark:focus {
   background-color: rgba(255, 255, 255, 0.08);
-  border-color: rgba(59, 130, 246, 0.5);
+  border-color: rgba(132, 204, 22, 0.5);
   color: #fff;
-  box-shadow: 0 0 0 0.2rem rgba(59, 130, 246, 0.15);
+  box-shadow: 0 0 0 0.2rem rgba(132, 204, 22, 0.2);
 }
 
 .form-control-dark::placeholder {
@@ -168,7 +173,7 @@ body {
 
 .form-floating>.form-control-dark:focus~label,
 .form-floating>.form-control-dark:not(:placeholder-shown)~label {
-  color: #3b82f6 !important;
+  color: var(--gx-neon) !important;
   opacity: 1;
 }
 
@@ -208,6 +213,42 @@ body {
   border-style: dashed !important;
 }
 
+/* --- OVERRIDE BOOTSTRAP PRIMARY COLORS --- */
+.text-primary {
+  color: var(--gx-neon) !important;
+}
+.bg-primary {
+  background-color: var(--gx-neon) !important;
+  color: #000 !important;
+}
+.border-primary {
+  border-color: var(--gx-neon) !important;
+}
+.btn-primary {
+  background-color: var(--gx-neon) !important;
+  border-color: var(--gx-neon) !important;
+  color: #000 !important;
+  font-weight: 600;
+  box-shadow: 0 0 10px rgba(132, 204, 22, 0.3);
+}
+.btn-primary:hover, .btn-primary:focus {
+  background-color: #a3e635 !important;
+  border-color: #a3e635 !important;
+  color: #000 !important;
+  box-shadow: 0 0 20px rgba(132, 204, 22, 0.8) !important;
+  transform: translateY(-2px);
+}
+.btn-outline-primary {
+  color: var(--gx-neon) !important;
+  border-color: var(--gx-neon) !important;
+}
+.btn-outline-primary:hover {
+  background-color: var(--gx-neon) !important;
+  color: #000 !important;
+  box-shadow: 0 0 15px rgba(132, 204, 22, 0.5);
+  transform: translateY(-2px);
+}
+
 /* Red Hover Effects */
 .btn-hover-danger:hover {
   background-color: #ef4444 !important;
@@ -239,9 +280,7 @@ body {
   background-image: url('/watermark.png');
   background-repeat: repeat;
   background-size: 400px;
-  /* Adjust size for visibility */
   opacity: 0.08;
-  /* Transparent enough to not disturb but visible to cameras */
 }
 
 /* For mobile, we might want smaller watermark tiles */
@@ -249,6 +288,110 @@ body {
   .security-watermark {
     background-size: 250px;
     opacity: 0.1;
-    /* slightly more visible on smaller screens */
   }
+}
+
+/* ========== ADVANCED CYBER EFFECTS ========== */
+@keyframes cyberGlitch {
+  0% { transform: translate(0) }
+  20% { transform: translate(-2px, 2px) }
+  40% { transform: translate(-2px, -2px) }
+  60% { transform: translate(2px, 2px) }
+  80% { transform: translate(2px, -2px) }
+  100% { transform: translate(0) }
+}
+
+.glitch-text {
+  position: relative;
+  display: inline-block;
+  /* animation: cyberGlitch 4s infinite;  (Removed to prevent conflict with animate-slide-up) */
+}
+.glitch-text::before, .glitch-text::after {
+  content: attr(data-text);
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0.8;
+  pointer-events: none;
+}
+.glitch-text::before {
+  left: 2px;
+  text-shadow: -1px 0 #0ff;
+  clip: rect(24px, 550px, 90px, 0);
+  animation: cyberGlitch-anim-2 3s infinite linear alternate-reverse;
+}
+.glitch-text::after {
+  left: -2px;
+  text-shadow: -1px 0 var(--gx-neon);
+  clip: rect(85px, 550px, 140px, 0);
+  animation: cyberGlitch-anim 2.5s infinite linear alternate-reverse;
+}
+
+@keyframes cyberGlitch-anim {
+  0% { clip: rect(10px, 9999px, 86px, 0); }
+  20% { clip: rect(50px, 9999px, 12px, 0); }
+  40% { clip: rect(89px, 9999px, 60px, 0); }
+  60% { clip: rect(2px, 9999px, 94px, 0); }
+  80% { clip: rect(74px, 9999px, 33px, 0); }
+  100% { clip: rect(62px, 9999px, 11px, 0); }
+}
+
+@keyframes cyberGlitch-anim-2 {
+  0% { clip: rect(65px, 9999px, 100px, 0); }
+  20% { clip: rect(10px, 9999px, 45px, 0); }
+  40% { clip: rect(55px, 9999px, 90px, 0); }
+  60% { clip: rect(98px, 9999px, 15px, 0); }
+  80% { clip: rect(23px, 9999px, 88px, 0); }
+  100% { clip: rect(44px, 9999px, 60px, 0); }
+}
+
+.cyber-hologram {
+  position: relative;
+  overflow: hidden;
+}
+.cyber-hologram::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(132, 204, 22, 0.1) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  transform: rotate(30deg);
+  animation: holoSweep 5s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes holoSweep {
+  0% { transform: translateY(-100%) rotate(30deg); }
+  100% { transform: translateY(100%) rotate(30deg); }
+}
+
+@keyframes btnPulseNeon {
+  0% { box-shadow: 0 0 10px rgba(132, 204, 22, 0.4); }
+  50% { box-shadow: 0 0 25px rgba(132, 204, 22, 0.8), 0 0 40px rgba(132, 204, 22, 0.4); }
+  100% { box-shadow: 0 0 10px rgba(132, 204, 22, 0.4); }
+}
+
+.btn-pulse-neon {
+  animation: btnPulseNeon 2s infinite alternate !important;
+}
+
+@keyframes logoPulseGlow {
+  0% { box-shadow: 0 0 10px rgba(132, 204, 22, 0.4), inset 0 0 5px rgba(132, 204, 22, 0.2); }
+  50% { box-shadow: 0 0 30px rgba(132, 204, 22, 0.9), inset 0 0 15px rgba(132, 204, 22, 0.5); }
+  100% { box-shadow: 0 0 10px rgba(132, 204, 22, 0.4), inset 0 0 5px rgba(132, 204, 22, 0.2); }
+}
+
+.logo-cyber-glow {
+  animation: logoPulseGlow 2s infinite alternate !important;
+  border: 1px solid rgba(132, 204, 22, 0.8) !important;
+  background: rgba(10, 15, 24, 0.8) !important;
 }

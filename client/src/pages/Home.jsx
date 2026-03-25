@@ -10,23 +10,23 @@ const Home = () => {
   }, []);
 
   return (
-    <div className="d-flex flex-column min-vh-100 bg-dark text-white font-sans">
+    <div className="d-flex flex-column min-vh-100 bg-gradient-dark text-white font-sans">
 
       {/* --- NAVBAR --- */}
       <nav className="navbar navbar-expand-md navbar-dark bg-dark py-3 border-bottom border-secondary sticky-top">
         <div className="container">
           <div className="d-flex align-items-center gap-2 cursor-pointer" onClick={() => navigate('/')}>
-            <div className="p-1 rounded bg-white bg-opacity-10 shadow-sm border border-white border-opacity-10 d-flex align-items-center justify-content-center">
+            <div className="p-1 rounded logo-cyber-glow d-flex align-items-center justify-content-center">
               <img src="/logo.png" alt="Logo" style={{ width: '32px', height: '32px', objectFit: 'contain' }} />
             </div>
-            <span className="h4 mb-0 fw-bold text-white">GuardXLens</span>
+            <span className="h4 mb-0 fw-bold text-white glitch-text" data-text="GuardXLens">GuardXLens</span>
           </div>
 
           <div className="d-flex gap-3 ms-auto">
             <button onClick={() => navigate('/login')} className="btn btn-link text-white text-decoration-none fw-medium d-none d-md-block">
               Login
             </button>
-            <button onClick={() => navigate('/register')} className="btn btn-primary d-flex align-items-center gap-2 px-4">
+            <button onClick={() => navigate('/register')} className="btn btn-primary btn-pulse-neon d-flex align-items-center gap-2 px-4 shadow-lg border-0">
               Get Started <ArrowRight size={18} />
             </button>
           </div>
@@ -46,8 +46,8 @@ const Home = () => {
 
             {/* Main Title */}
             <h1 className="display-3 fw-bold mb-4 text-white">
-              Secure Exams. <br className="d-none d-md-block" />
-              <span className="text-primary">Uncompromised Integrity.</span>
+              <span className="glitch-text" data-text="Secure Exams.">Secure Exams.</span> <br className="d-none d-md-block" />
+              <span className="text-primary glitch-text" style={{ animationDelay: '0.5s' }} data-text="Uncompromised Integrity.">Uncompromised Integrity.</span>
             </h1>
 
             {/* Subtitle */}
@@ -58,10 +58,10 @@ const Home = () => {
 
             {/* CTA Buttons */}
             <div className="d-flex flex-column flex-sm-row gap-3 justify-content-center mb-5">
-              <button onClick={() => navigate('/register', { state: { role: 'institution' } })} className="btn btn-primary btn-lg px-5 py-3 fs-6 fw-bold">
+              <button onClick={() => navigate('/register', { state: { role: 'institution' } })} className="btn btn-primary btn-pulse-neon btn-lg px-5 py-3 fs-6 fw-bold border-0 hover-lift">
                 Deploy for Institution
               </button>
-              <button onClick={() => navigate('/login')} className="btn btn-outline-light btn-lg px-5 py-3 fs-6 fw-bold">
+              <button onClick={() => navigate('/login')} className="btn btn-outline-light btn-pulse-neon btn-lg px-5 py-3 fs-6 fw-bold hover-lift" style={{boxShadow: '0 0 15px rgba(255,255,255,0.2)'}}>
                 Student Login
               </button>
             </div>
@@ -84,9 +84,9 @@ const Home = () => {
 
             {/* Feature 1 */}
             <div className="col-md-6 col-lg-4">
-              <div className="card h-100 border-0 shadow-sm bg-dark text-white">
-                <div className="card-body p-4">
-                  <div className="p-3 rounded bg-primary bg-opacity-10 mb-4 d-inline-block text-primary">
+              <div className="card h-100 border-0 shadow-lg bg-dark text-white cyber-hologram glass-panel">
+                <div className="card-body p-4 position-relative z-1">
+                  <div className="p-3 rounded bg-primary bg-opacity-10 mb-4 d-inline-block text-primary" style={{ boxShadow: '0 0 15px rgba(132, 204, 22, 0.4)' }}>
                     <Lock size={32} />
                   </div>
                   <h3 className="h4 fw-bold mb-3">Browser Lockdown</h3>
@@ -97,8 +97,8 @@ const Home = () => {
 
             {/* Feature 2 (Highlighted) */}
             <div className="col-md-6 col-lg-4">
-              <div className="card h-100 border-primary shadow bg-dark text-white">
-                <div className="card-body p-4">
+              <div className="card h-100 border-primary shadow-lg bg-dark text-white cyber-hologram glass-panel" style={{ animationDelay: '0.5s' }}>
+                <div className="card-body p-4 position-relative z-1">
                   <div className="p-3 rounded bg-info bg-opacity-10 mb-4 d-inline-block text-info">
                     <Cpu size={32} />
                   </div>
@@ -110,8 +110,8 @@ const Home = () => {
 
             {/* Feature 3 */}
             <div className="col-md-6 col-lg-4">
-              <div className="card h-100 border-0 shadow-sm bg-dark text-white">
-                <div className="card-body p-4">
+              <div className="card h-100 border-0 shadow-lg bg-dark text-white cyber-hologram glass-panel" style={{ animationDelay: '1s' }}>
+                <div className="card-body p-4 position-relative z-1">
                   <div className="p-3 rounded bg-warning bg-opacity-10 mb-4 d-inline-block text-warning">
                     <Eye size={32} />
                   </div>

@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 
 // --- COMPONENTS ---
 import ProtectedRoute from './components/ProtectedRoute'; // Ensure this path exists
+import CyberBackground from './components/CyberBackground';
 
 // --- LAYOUTS ---
 import AdminLayout from './layouts/AdminLayout';
@@ -26,6 +27,7 @@ import InstitutionStudents from './pages/Institution/InstitutionStudents';
 import EditExam from './pages/Institution/EditExam';
 import ActiveExams from './pages/Institution/ActiveExams';
 import AdminResultView from './pages/Institution/AdminResultView';
+import InstitutionExamResults from './pages/Institution/InstitutionExamResults';
 
 // --- PAGES: STUDENT ---
 import StudentDashboard from './pages/student/StudentDashboard';
@@ -35,6 +37,7 @@ import StudentResults from './pages/student/StudentResults';
 function App() {
     return (
         <Router>
+            <CyberBackground />
             <Routes>
                 {/* PUBLIC ROUTES */}
                 <Route path="/" element={<Home />} />
@@ -75,6 +78,7 @@ function App() {
                     <Route path="edit-exam/:id" element={<EditExam />} />
                     <Route path="students" element={<InstitutionStudents />} />
                     <Route path="result-view/:studentId/:resultId" element={<AdminResultView />} />
+                    <Route path="exam-results/:examId" element={<InstitutionExamResults />} />
                     <Route index element={<Navigate to="dashboard" replace />} />
                 </Route>
 

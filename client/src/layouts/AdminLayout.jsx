@@ -42,7 +42,7 @@ const AdminLayout = () => {
   const SidebarContent = ({ onNavigate }) => (
     <div className="d-flex flex-column h-100">
       <div className="p-4 border-bottom border-white border-opacity-10 d-flex align-items-center gap-3">
-        <div className="bg-white bg-opacity-10 p-1 rounded shadow-sm border border-white border-opacity-10">
+        <div className="logo-cyber-glow p-1 rounded shadow-sm">
           <img src="/logo.png" alt="Logo" style={{ width: '42px', height: '42px', objectFit: 'contain' }} />
         </div>
         <div>

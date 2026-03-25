@@ -56,8 +56,10 @@ const Register = () => {
                     {/* Left Side: Brand/Hero */}
                     <div className="col-lg-6 d-none d-lg-block">
                         <div className="pe-lg-5">
-                            <div className="d-inline-flex align-items-center justify-content-center p-3 rounded-pill bg-primary bg-opacity-10 text-primary mb-4 animate-slide-up stagger-1">
-                                <ShieldCheck size={48} />
+                            <div className="animate-slide-up stagger-1 mb-4">
+                                <div className="d-inline-flex align-items-center justify-content-center p-2 rounded logo-cyber-glow shadow-lg">
+                                    <img src="/logo.png" alt="Logo" style={{ width: '64px', height: '64px', objectFit: 'contain' }} />
+                                </div>
                             </div>
                             <h1 className="display-4 fw-bold mb-3 text-white animate-slide-up stagger-2">Join GuardXLens</h1>
                             <p className="lead text-white-50 mb-5 animate-slide-up stagger-3">
@@ -95,7 +97,14 @@ const Register = () => {
                     <div className="col-lg-5 animate-slide-up stagger-2">
                         <div className="card glass-panel shadow-lg border-0">
                             <div className="card-body p-4 p-md-5">
-                                <div className="text-center mb-4">
+                                <div className="text-center mb-4 d-flex flex-column align-items-center">
+                                    {/* Unified Branding Header */}
+                                    <div className="d-flex align-items-center justify-content-center gap-3 mb-3">
+                                        <div className="p-2 rounded-circle logo-cyber-glow shadow d-flex align-items-center justify-content-center" style={{ width: '50px', height: '50px' }}>
+                                            <img src="/logo.png" alt="Logo" style={{ width: '30px', height: '30px', objectFit: 'contain' }} />
+                                        </div>
+                                        <h2 className="fw-bold text-white mb-0" style={{ letterSpacing: '0.5px' }}>GuardXLens</h2>
+                                    </div>
                                     <h3 className="fw-bold mb-1 text-white">Create Account</h3>
                                     <p className="text-white-50 small">Sign up for a new account</p>
                                 </div>
@@ -201,7 +210,7 @@ const Register = () => {
                                         <label htmlFor="password" className="text-white-50">Password</label>
                                     </div>
 
-                                    <button disabled={loading} className="btn btn-primary w-100 py-3 fw-bold rounded d-flex justify-content-center align-items-center gap-2 shadow-sm btn-hover-scale">
+                                    <button disabled={loading} className="btn btn-primary btn-pulse-neon w-100 py-3 fw-bold rounded d-flex justify-content-center align-items-center gap-2 border-0 shadow-lg">
                                         {loading ? <Loader2 className="spinner-border spinner-border-sm" /> : (
                                             <>Register <ArrowRight size={20} /></>
                                         )}

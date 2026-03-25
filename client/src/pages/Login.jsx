@@ -45,16 +45,18 @@ const Login = () => {
           {/* Left Side: Brand/Hero */}
           <div className="col-lg-6 d-none d-lg-block">
             <div className="pe-lg-5">
-              <div className="d-inline-flex align-items-center justify-content-center p-2 rounded bg-white bg-opacity-10 mb-4 shadow-lg border border-white border-opacity-10 animate-slide-up stagger-1">
-                <img src="/logo.png" alt="Logo" style={{ width: '64px', height: '64px', objectFit: 'contain' }} />
+              <div className="animate-slide-up stagger-1 mb-4">
+                <div className="d-inline-flex align-items-center justify-content-center p-2 rounded logo-cyber-glow shadow-lg">
+                  <img src="/logo.png" alt="Logo" style={{ width: '64px', height: '64px', objectFit: 'contain' }} />
+                </div>
               </div>
               <h1 className="display-4 fw-bold mb-3 text-white animate-slide-up stagger-2">Welcome Back</h1>
               <p className="lead text-white-50 mb-5 animate-slide-up stagger-3">
                 Securely access your GuardXLens dashboard to manage exams, view results, and ensure academic integrity.
               </p>
 
-              <div className="card glass-panel border-0 shadow-lg animate-slide-up stagger-4">
-                <div className="card-body p-4">
+              <div className="card glass-panel border-0 shadow-lg animate-slide-up stagger-4 cyber-hologram">
+                <div className="card-body p-4 position-relative z-1">
                   <h5 className="fw-bold mb-3 d-flex align-items-center gap-2 text-white">
                     <BellRing size={20} className="text-warning" /> Latest Updates
                   </h5>
@@ -79,9 +81,16 @@ const Login = () => {
 
           {/* Right Side: Login Form */}
           <div className="col-lg-5 animate-slide-up stagger-2">
-            <div className="card glass-panel shadow-lg border-0">
-              <div className="card-body p-4 p-md-5">
-                <div className="text-center mb-4">
+            <div className="card glass-panel shadow-lg border-0 cyber-hologram" style={{ animationDelay: '0.5s' }}>
+              <div className="card-body p-4 p-md-5 position-relative z-1">
+                <div className="text-center mb-4 d-flex flex-column align-items-center">
+                  {/* Unified Branding Header */}
+                  <div className="d-flex align-items-center justify-content-center gap-3 mb-3">
+                      <div className="p-2 rounded-circle logo-cyber-glow shadow d-flex align-items-center justify-content-center" style={{ width: '50px', height: '50px' }}>
+                          <img src="/logo.png" alt="Logo" style={{ width: '30px', height: '30px', objectFit: 'contain' }} />
+                      </div>
+                      <h2 className="fw-bold text-white mb-0" style={{ letterSpacing: '0.5px' }}>GuardXLens</h2>
+                  </div>
                   <h3 className="fw-bold mb-1 text-white">Sign In</h3>
                   <p className="text-white-50 small">Access your account</p>
                 </div>
@@ -120,7 +129,7 @@ const Login = () => {
                     <Link to="/forgot-password" size={16} className="text-primary text-decoration-none small fw-bold">Forgot password?</Link>
                   </div>
 
-                  <button disabled={loading} className="btn btn-primary w-100 py-3 fw-bold rounded d-flex justify-content-center align-items-center gap-2 shadow-sm btn-hover-scale">
+                  <button disabled={loading} className="btn btn-primary btn-pulse-neon w-100 py-3 fw-bold rounded d-flex justify-content-center align-items-center gap-2 border-0 shadow-lg">
                     {loading ? <Loader2 className="spinner-border spinner-border-sm" /> : (
                       <>Sign In <ArrowRight size={20} /></>
                     )}

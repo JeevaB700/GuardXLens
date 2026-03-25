@@ -111,15 +111,17 @@ const extractQuestions = async (req, res) => {
 // 2. SAVE EXAM
 const saveExam = async (req, res) => {
   try {
-    const { title, subject, duration, questions } = req.body;
+    const { title, subject, duration, questions, startTime, endTime, passMarks } = req.body;
     const institutionId = req.user.institutionId;
 
     const totalMarks = questions.reduce((sum, q) => sum + (parseInt(q.marks) || 0), 0);
 
     const newExam = new Exam({
       title, subject, duration, questions, totalMarks,
+      startTime, endTime, passMarks,
       institutionId: institutionId || null
     });
+
 
     await newExam.save();
     res.status(201).json({ success: true, message: "Exam created!", examId: newExam._id });
@@ -134,23 +136,39 @@ const getExamsByInstitution = async (req, res) => {
     const institutionId = req.user.institutionId;
     const query = req.user.role === 'admin' ? {} : { institutionId };
 
-    const exams = await Exam.find(query).select('title subject duration totalMarks createdAt questions').sort({ createdAt: -1 });
+    const exams = await Exam.find(query).select('title subject duration totalMarks startTime endTime passMarks createdAt questions').sort({ createdAt: -1 });
     res.json({ success: true, exams });
   } catch (error) {
     res.status(500).json({ message: "Error fetching exams" });
   }
 };
 
-// 4. GET ALL EXAMS (Student Dashboard - Filtered by Institution)
+// 4. GET ALL EXAMS (Student Dashboard - Filtered by Institution & Untaken)
 const getAllExams = async (req, res) => {
   try {
-    const { institutionId } = req.user;
+    const studentId = req.user.id || req.user._id;
+    const institutionId = req.user.institutionId;
 
     // Filter exams by the student's institution
-    const query = institutionId ? { institutionId } : {};
+    let query = institutionId ? { institutionId } : {};
 
-    const exams = await Exam.find(query).select('-questions');
-    res.json({ success: true, exams });
+    // Find all exams the student has already taken
+    const takenResults = await Result.find({ studentId }).select('examId');
+    const takenExamIds = takenResults.map(r => r.examId.toString());
+
+    // Fetch exams
+    const exams = await Exam.find(query)
+      .select('title subject duration totalMarks startTime endTime passMarks createdAt')
+      .sort({ createdAt: -1 })
+      .lean(); // Use lean to add properties easily
+
+    // Map to include hasAttempted flag
+    const mappedExams = exams.map(exam => ({
+      ...exam,
+      hasAttempted: takenExamIds.includes(exam._id.toString())
+    }));
+
+    res.json({ success: true, exams: mappedExams });
   } catch (error) {
     res.status(500).json({ message: "Error fetching student exams" });
   }
@@ -184,13 +202,22 @@ const getExamForStudent = async (req, res) => {
 const updateExam = async (req, res) => {
   try {
     const { id } = req.params;
-    const { title, subject, duration, questions } = req.body;
+    const { title, subject, duration, questions, startTime, endTime, passMarks } = req.body;
 
-    const totalMarks = questions.reduce((sum, q) => sum + (parseInt(q.marks) || 0), 0);
+    const totalMarks = questions ? questions.reduce((sum, q) => sum + (parseInt(q.marks) || 0), 0) : undefined;
+    
+    let updateFields = { title, subject, duration };
+    if (questions) {
+      updateFields.questions = questions;
+      updateFields.totalMarks = totalMarks;
+    }
+    if (startTime) updateFields.startTime = startTime;
+    if (endTime) updateFields.endTime = endTime;
+    if (passMarks !== undefined) updateFields.passMarks = passMarks;
 
     const updatedExam = await Exam.findByIdAndUpdate(
       id,
-      { title, subject, duration, questions, totalMarks },
+      updateFields,
       { new: true }
     );
 
@@ -204,7 +231,7 @@ const updateExam = async (req, res) => {
 // 7. SUBMIT EXAM
 const submitExam = async (req, res) => {
   try {
-    const { examId, answers, codingResults, studentId, isMalpractice, violationCount, violationLogs } = req.body;
+    const { examId, answers, codingResults, studentId, isMalpractice, violationCount, violationLogs, startedAt } = req.body;
     const exam = await Exam.findById(examId);
 
     let totalScore = 0;
@@ -260,7 +287,8 @@ const submitExam = async (req, res) => {
       totalMarks: exam ? exam.totalMarks : 0,
       isMalpractice: isMalpractice || false,
       violationCount: violationCount || 0,
-      violationLogs: violationLogs || []
+      violationLogs: violationLogs || [],
+      startedAt: startedAt || null
     });
 
     await newResult.save();
@@ -347,6 +375,19 @@ const deleteExam = async (req, res) => {
   }
 };
 
+// 11. GET RESULTS BY EXAM (Institution Specific Exam View)
+const getResultsByExam = async (req, res) => {
+  try {
+    const { examId } = req.params;
+    const results = await Result.find({ examId })
+      .populate({ path: 'studentId', select: 'name email institutionId', populate: { path: 'institutionId', select: 'name' } })
+      .populate('examId', 'title passMarks totalMarks startTime endTime')
+      .sort({ submittedAt: -1 });
+    res.json({ success: true, results });
+  } catch (e) { res.status(500).json({ message: "Error" }); }
+};
+
+
 module.exports = {
   extractQuestions,
   saveExam,
@@ -358,5 +399,6 @@ module.exports = {
   getStudentResults,
   getAllStudentResults,
   generateTestCases,
-  deleteExam
+  deleteExam,
+  getResultsByExam
 };

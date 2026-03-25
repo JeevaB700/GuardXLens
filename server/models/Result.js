@@ -22,6 +22,7 @@ const resultSchema = new mongoose.Schema({
     time: { type: String }
   }],
 
+  startedAt: { type: Date },
   submittedAt: { type: Date, default: Date.now }
 });
 

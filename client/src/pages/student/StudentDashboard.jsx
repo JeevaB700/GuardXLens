@@ -65,7 +65,7 @@ const StudentDashboard = () => {
             <nav className="navbar navbar-expand-lg navbar-dark glass-navbar px-4 py-3 sticky-top">
                 <div className="container-fluid d-flex align-items-center justify-content-between flex-nowrap">
                     <span className="navbar-brand fw-bold d-flex align-items-center gap-2 mb-0">
-                        <div className="bg-white bg-opacity-10 rounded p-1 d-flex align-items-center justify-content-center shadow-lg border border-white border-opacity-10" style={{ width: '32px', height: '32px' }}>
+                        <div className="logo-cyber-glow rounded p-1 d-flex align-items-center justify-content-center shadow-lg" style={{ width: '32px', height: '32px' }}>
                             <img src="/logo.png" alt="GX" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
                         </div>
                         <span className="fs-5">GuardXLens</span>
@@ -146,29 +146,61 @@ const StudentDashboard = () => {
                             </div>
                         ) : (
                             <div className="row g-3">
-                                {exams.map((exam, index) => (
-                                    <div key={exam._id} className={`col-md-6 animate-slide-up stagger-${(index % 4) + 1}`}>
-                                        <div className="card h-100 border-0 shadow-sm hover-shadow-sm transition-all glass-panel">
-                                            <div className="card-body p-4 d-flex flex-column">
-                                                <div className="d-flex justify-content-between align-items-start mb-3">
-                                                    <span className="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill bg-opacity-10">{exam.subject || 'General'}</span>
-                                                    <small className="text-muted font-monospace bg-dark bg-opacity-50 px-2 rounded">#{exam._id.slice(-4)}</small>
-                                                </div>
+                                {exams.map((exam, index) => {
+                                    const now = new Date();
+                                    const start = new Date(exam.startTime);
+                                    const end = new Date(exam.endTime);
+                                    let statusText = "Ready to start";
+                                    let isPlayable = true;
+                                    let btnClass = "btn-primary";
 
-                                                <h5 className="card-title fw-bold text-white mb-1">{exam.title}</h5>
-                                                <p className="card-text text-white-50 small border-bottom border-secondary border-opacity-25 pb-3 mb-3">
-                                                    Duration: {exam.duration} mins • Marks: {exam.totalMarks}
-                                                </p>
+                                    if (exam.hasAttempted) {
+                                        statusText = "Already Attended";
+                                        isPlayable = false;
+                                        btnClass = "btn-outline-success";
+                                    } else if (now < start) {
+                                        statusText = `Starts: ${start.toLocaleString()}`;
+                                        isPlayable = false;
+                                        btnClass = "btn-outline-secondary";
+                                    } else if (now > end) {
+                                        statusText = `Expired: ${end.toLocaleString()}`;
+                                        isPlayable = false;
+                                        btnClass = "btn-outline-danger";
+                                    } else {
+                                        statusText = `Ends: ${end.toLocaleString()}`;
+                                    }
 
-                                                <div className="mt-auto pt-2">
-                                                    <button onClick={() => navigate(`/student/take-exam/${exam._id}`)} className="btn btn-primary w-100 fw-bold d-flex align-items-center justify-content-center gap-2 shadow-lg btn-hover-scale">
-                                                        Start Exam <Play size={16} fill="currentColor" />
-                                                    </button>
+                                    return (
+                                        <div key={exam._id} className={`col-md-6 animate-slide-up stagger-${(index % 4) + 1}`}>
+                                            <div className="card h-100 border-0 shadow-sm hover-shadow-sm transition-all glass-panel">
+                                                <div className="card-body p-4 d-flex flex-column">
+                                                    <div className="d-flex justify-content-between align-items-start mb-3">
+                                                        <span className="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill bg-opacity-10">{exam.subject || 'General'}</span>
+                                                        <small className="text-muted font-monospace bg-dark bg-opacity-50 px-2 rounded">#{exam._id.slice(-4)}</small>
+                                                    </div>
+
+                                                    <h5 className="card-title fw-bold text-white mb-1">{exam.title}</h5>
+                                                    <p className="card-text text-white-50 small mb-1">
+                                                        Duration: {exam.duration} mins • Marks: {exam.totalMarks}
+                                                    </p>
+                                                    <p className="card-text text-white-50 small border-bottom border-secondary border-opacity-25 pb-3 mb-3">
+                                                        <Clock size={12} className="me-1"/> {statusText}
+                                                    </p>
+
+                                                    <div className="mt-auto pt-2">
+                                                        <button 
+                                                            disabled={!isPlayable}
+                                                            onClick={() => navigate(`/student/take-exam/${exam._id}`)} 
+                                                            className={`btn ${btnClass} w-100 fw-bold d-flex align-items-center justify-content-center gap-2 shadow-lg btn-hover-scale`}
+                                                        >
+                                                            {isPlayable ? 'Start Exam' : 'Not Available'} {isPlayable && <Play size={16} fill="currentColor" />}
+                                                        </button>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
-                                    </div>
-                                ))}
+                                    );
+                                })}
                             </div>
                         )}
                     </div>

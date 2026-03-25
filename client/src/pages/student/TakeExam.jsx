@@ -46,6 +46,7 @@ const TakeExam = () => {
     // REF
     const answersRef = useRef(answers);
     useEffect(() => { answersRef.current = answers; }, [answers]);
+    const startedAtRef = useRef(null);
 
     const MAX_WARNINGS = 2;
 
@@ -100,7 +101,8 @@ const TakeExam = () => {
                 studentId: user?.id,
                 isMalpractice,
                 violationCount,
-                violationLogs
+                violationLogs,
+                startedAt: startedAtRef.current
             }, { headers: { Authorization: `Bearer ${token}` } });
 
             if (document.fullscreenElement) document.exitFullscreen().catch(() => { });
@@ -517,7 +519,7 @@ const TakeExam = () => {
 
     // --- MAIN EXAM UI ---
     return (
-        <div className="vh-100 d-flex flex-column bg-gradient-dark font-sans overflow-hidden text-light animate-fade-in" data-bs-theme="dark" style={{ userSelect: 'none', WebkitUserSelect: 'none', MozUserSelect: 'none', msUserSelect: 'none' }}>
+        <div className="vh-100 d-flex flex-column bg-gradient-dark font-sans overflow-hidden text-light animate-fade-in" data-bs-theme="dark" style={{ background: 'radial-gradient(circle at top right, #1e293b, #0f172a)', userSelect: 'none', WebkitUserSelect: 'none', MozUserSelect: 'none', msUserSelect: 'none' }}>
             {/* Security Watermark */}
             <div className="security-watermark"></div>
 
@@ -612,12 +614,12 @@ const TakeExam = () => {
                                         <div
                                             key={i}
                                             onClick={() => handleAnswerChange(opt)}
-                                            className={`p-3 rounded-3 border d-flex align-items-center gap-3 cursor-pointer transition-all glass-panel ${isSelected ? 'border-primary bg-primary bg-opacity-25 glow-primary' : 'border-white border-opacity-10 hover-bg-light-10'}`}
+                                            className={`p-3 rounded-3 border d-flex align-items-center gap-3 cursor-pointer transition-all ${isSelected ? 'border-primary bg-primary bg-opacity-10 shadow-sm' : 'glass-panel border-white border-opacity-10 hover-bg-light-10'}`}
                                         >
-                                            <div className={`${isMulti ? 'rounded' : 'rounded-circle'} border d-flex align-items-center justify-content-center flex-shrink-0 transition-all ${isSelected ? 'border-primary bg-primary shadow-sm' : 'border-secondary'}`} style={{ width: '22px', height: '22px' }}>
-                                                {isSelected && (isMulti ? <CheckCircle size={14} className="text-white" /> : <div className="bg-white rounded-circle" style={{ width: '8px', height: '8px' }}></div>)}
+                                            <div className={`${isMulti ? 'rounded' : 'rounded-circle'} border d-flex align-items-center justify-content-center flex-shrink-0 transition-all ${isSelected ? 'border-primary bg-primary' : 'border-secondary'}`} style={{ width: '22px', height: '22px' }}>
+                                                {isSelected && (isMulti ? <CheckCircle size={14} className="text-black" /> : <div className="bg-black rounded-circle" style={{ width: '8px', height: '8px' }}></div>)}
                                             </div>
-                                            <span className={isSelected ? 'text-primary fw-bold' : 'text-light opacity-75'}>{opt}</span>
+                                            <span className={isSelected ? 'text-white fw-bold' : 'text-light opacity-75'}>{opt}</span>
                                         </div>
                                     );
                                 })}

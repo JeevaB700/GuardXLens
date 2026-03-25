@@ -15,7 +15,8 @@ const CreateExam = () => {
     const [generating, setGenerating] = useState(null);
 
     const [examData, setExamData] = useState({
-        title: '', subject: '', duration: 60, questions: []
+        title: '', subject: '', duration: 60, questions: [],
+        startTime: '', endTime: '', passMarks: 40
     });
 
     const handleInputChange = (e) => setExamData({ ...examData, [e.target.name]: e.target.value });
@@ -155,6 +156,8 @@ const CreateExam = () => {
 
     const handleSave = async () => {
         if (!examData.title || !examData.subject) return alert("Please fill title and subject");
+        if (!examData.startTime || !examData.endTime || !examData.passMarks) return alert("Please specify Start Time, End Time, and Pass Marks");
+        if (new Date(examData.startTime) >= new Date(examData.endTime)) return alert("End Time must be after Start Time");
 
         setLoading(true);
         try {
@@ -240,6 +243,37 @@ const CreateExam = () => {
                                         defaultValue={60}
                                     />
                                 </div>
+                            </div>
+                            <div className="mb-3">
+                                <label className="form-label text-white-50 small fw-bold text-uppercase">Start Time</label>
+                                <input
+                                    type="datetime-local"
+                                    name="startTime"
+                                    onChange={handleInputChange}
+                                    className="form-control form-control-dark"
+                                    required
+                                />
+                            </div>
+                            <div className="mb-3">
+                                <label className="form-label text-white-50 small fw-bold text-uppercase">End Time</label>
+                                <input
+                                    type="datetime-local"
+                                    name="endTime"
+                                    onChange={handleInputChange}
+                                    className="form-control form-control-dark"
+                                    required
+                                />
+                            </div>
+                            <div className="mb-3">
+                                <label className="form-label text-white-50 small fw-bold text-uppercase">Pass Marks</label>
+                                <input
+                                    type="number"
+                                    name="passMarks"
+                                    onChange={handleInputChange}
+                                    className="form-control form-control-dark"
+                                    defaultValue={40}
+                                    required
+                                />
                             </div>
                         </div>
                     </div>

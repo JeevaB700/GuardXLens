@@ -1,6 +1,6 @@
 const express = require('express');
 const multer = require('multer');
-const { extractQuestions, saveExam, generateTestCases, getAllStudentResults, getExamsByInstitution, updateExam, deleteExam } = require('../controllers/examController');
+const { extractQuestions, saveExam, generateTestCases, getAllStudentResults, getExamsByInstitution, updateExam, deleteExam, getResultsByExam } = require('../controllers/examController');
 // 1. IMPORT PROTECT MIDDLEWARE
 const { protect } = require('../middleware/authMiddleware');
 const { getStudentsByInstitutionId } = require('../controllers/authController');
@@ -25,6 +25,7 @@ router.get('/students/:institutionId', protect, getStudentsByInstitutionId);
 // --- ADD THIS NEW ROUTE ---
 router.put('/exam/:id', protect, updateExam);
 router.delete('/exam/:id', protect, deleteExam); // <--- NEW DELETE ROUTE
+router.get('/exam-results/:examId', protect, getResultsByExam);
 
 // 1. Get list of bad students
 router.get('/malpractice-students', protect, getMalpracticeStudents);

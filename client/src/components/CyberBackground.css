@@ -1,0 +1,85 @@
+.cyber-grid-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: -1;
+    overflow: hidden;
+    background: radial-gradient(circle at center, #0a0f18 0%, #000000 100%);
+    pointer-events: none;
+}
+
+.cyber-grid {
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background-image: 
+        linear-gradient(rgba(132, 204, 22, 0.15) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(132, 204, 22, 0.15) 1px, transparent 1px);
+    background-size: 60px 60px;
+    transform: perspective(800px) rotateX(60deg) translateY(-100px) translateZ(-200px);
+    animation: cyberGridMove 8s linear infinite;
+    opacity: 0.6;
+}
+
+.cyber-glow {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(circle at 50% 50%, rgba(132, 204, 22, 0.08) 0%, transparent 60%);
+    pointer-events: none;
+    animation: pulseAura 4s ease-in-out infinite alternate;
+}
+
+.cyber-scanner {
+    position: absolute;
+    top: -100px;
+    left: 0;
+    width: 100%;
+    height: 8px;
+    background: rgba(132, 204, 22, 0.8);
+    box-shadow: 0 0 20px rgba(132, 204, 22, 1), 0 0 40px rgba(132, 204, 22, 0.5);
+    animation: scanVertical 6s linear infinite;
+    opacity: 0.7;
+    z-index: 10;
+}
+
+.cyber-particles {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: radial-gradient(rgba(132, 204, 22, 1) 1px, transparent 1px);
+    background-size: 150px 150px;
+    background-position: 0 0;
+    animation: flyFloating 15s linear infinite;
+    opacity: 0.3;
+}
+
+@keyframes cyberGridMove {
+    0% { transform: perspective(800px) rotateX(60deg) translateY(0) translateZ(-200px); }
+    100% { transform: perspective(800px) rotateX(60deg) translateY(60px) translateZ(-200px); }
+}
+
+@keyframes scanVertical {
+    0% { top: -10px; opacity: 0; }
+    5% { opacity: 0.8; }
+    95% { opacity: 0.8; }
+    100% { top: 110%; opacity: 0; }
+}
+
+@keyframes pulseAura {
+    0% { opacity: 0.4; transform: scale(0.95); }
+    100% { opacity: 0.8; transform: scale(1.05); }
+}
+
+@keyframes flyFloating {
+    0% { background-position: 0 0; }
+    100% { background-position: 150px 150px; }
+}

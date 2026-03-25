@@ -29,28 +29,30 @@ const WebcamProctor = ({ onViolation }) => {
 
             // Load Face-API Models (Required for proctoring)
             try {
-                await Promise.all([
-                    faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
-                    faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL)
-                ]);
+                await faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL);
                 console.log("✅ Face-API Models Loaded");
             } catch (e) {
                 console.error("❌ Error loading face-api models:", e);
                 // We don't return here so it can still try to set modelsLoaded or show error
             }
 
-            // Load COCO-SSD (Optional AI feature) with a timeout
-            try {
-                const cocoPromise = cocoSsd.load();
-                const timeoutPromise = new Promise((_, reject) =>
-                    setTimeout(() => reject(new Error("Timeout loading COCO-SSD")), 8000)
-                );
+            // Load COCO-SSD (Optional AI feature) with a timeout - DISABLE ON MOBILE FOR PERFORMANCE
+            const isMobileDevice = window.innerWidth < 768;
+            if (!isMobileDevice) {
+                try {
+                    const cocoPromise = cocoSsd.load();
+                    const timeoutPromise = new Promise((_, reject) =>
+                        setTimeout(() => reject(new Error("Timeout loading COCO-SSD")), 8000)
+                    );
 
-                const model = await Promise.race([cocoPromise, timeoutPromise]);
-                setObjectModel(model);
-                console.log("✅ COCO-SSD Model Loaded");
-            } catch (e) {
-                console.warn("⚠️ AI Phone Detection failed to load (timeout or offline), but proctoring will continue:", e.message);
+                    const model = await Promise.race([cocoPromise, timeoutPromise]);
+                    setObjectModel(model);
+                    console.log("✅ COCO-SSD Model Loaded");
+                } catch (e) {
+                    console.warn("⚠️ AI Phone Detection failed to load (timeout or offline), but proctoring will continue:", e.message);
+                }
+            } else {
+                console.log("ℹ️ Mobile Device Detected: Disabled COCO-SSD for performance.");
             }
 
             setModelsLoaded(true);
@@ -67,10 +69,12 @@ const WebcamProctor = ({ onViolation }) => {
                     setDetecting(true);
                     const video = webcamRef.current.video;
 
-                    // 1. FACE DETECTION
+                    const isMobileDevice = window.innerWidth < 768;
+
+                    // 1. FACE DETECTION (Lowered scoreThreshold to 0.3 for low-light accuracy)
                     const detections = await faceapi.detectAllFaces(
                         video,
-                        new faceapi.TinyFaceDetectorOptions()
+                        new faceapi.TinyFaceDetectorOptions({ inputSize: 320, scoreThreshold: 0.3 })
                     );
 
                     const count = detections.length;
@@ -79,8 +83,9 @@ const WebcamProctor = ({ onViolation }) => {
                     // LOGIC: NO FACE
                     if (count === 0) {
                         setNoFaceCounter(prev => prev + 1);
-                        // Grace period of 2 cycles (~2 seconds total if interval is 1s)
-                        if (noFaceCounter >= 2) {
+                        // Grace period: ~6 continuous seconds of absence
+                        const missThreshold = isMobileDevice ? 3 : 6; 
+                        if (noFaceCounter >= missThreshold) {
                             onViolation("NO_FACE_DETECTED", "No user visible in camera");
                             setNoFaceCounter(0); 
                         }
@@ -114,7 +119,8 @@ const WebcamProctor = ({ onViolation }) => {
 
                     setDetecting(false);
                 }
-            }, 1000); // Reduced from 3000ms to 1000ms
+            }, window.innerWidth < 768 ? 2000 : 1000); // 2s on mobile, 1s on desktop
+
         }
         return () => clearInterval(interval);
     }, [modelsLoaded, noFaceCounter, onViolation, objectModel]);
@@ -152,7 +158,7 @@ const WebcamProctor = ({ onViolation }) => {
                             audio={false}
                             ref={webcamRef}
                             screenshotFormat="image/jpeg"
-                            videoConstraints={{ width: 640, height: 480, facingMode: "user" }}
+                            videoConstraints={{ width: isMobile ? 320 : 640, height: isMobile ? 240 : 480, facingMode: "user" }}
                         />
                     </div>
                 </div>
@@ -180,7 +186,7 @@ const WebcamProctor = ({ onViolation }) => {
                             ref={webcamRef}
                             screenshotFormat="image/jpeg"
                             className="w-100 h-100 object-fit-cover opacity-75"
-                            videoConstraints={{ width: 640, height: 480, facingMode: "user" }}
+                            videoConstraints={{ width: isMobile ? 320 : 640, height: isMobile ? 240 : 480, facingMode: "user" }}
                         />
 
                         {/* Status Overlays */}

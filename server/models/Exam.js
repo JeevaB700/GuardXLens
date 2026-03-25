@@ -26,6 +26,11 @@ const examSchema = new mongoose.Schema({
   totalMarks: { type: Number, default: 0 },
   questions: [questionSchema],
 
+  // --- NEW FIELDS FOR SCHEDULING & CONFIG ---
+  startTime: { type: Date, required: true },
+  endTime: { type: Date, required: true },
+  passMarks: { type: Number, required: true },
+
   // --- NEW FIELD: Link Exam to Institution ---
   institutionId: {
     type: mongoose.Schema.Types.ObjectId,

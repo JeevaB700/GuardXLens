@@ -95,7 +95,10 @@ const ActiveExams = () => {
                             </div>
                         ) : (
                             filteredExams.map((exam, index) => (
-                                <div key={exam._id} className={`card glass-panel border border-white border-opacity-10 shadow-sm hover-shadow-lg transition-all animate-slide-up stagger-${(index % 5) + 1}`}>
+                                <div key={exam._id} 
+                                     onClick={() => navigate(`/institution/exam-results/${exam._id}`)}
+                                     style={{ cursor: 'pointer' }}
+                                     className={`card glass-panel border border-white border-opacity-10 shadow-sm hover-shadow-lg hover-lift transition-all animate-slide-up stagger-${(index % 5) + 1}`}>
                                     <div className="card-body p-4 d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3">
                                         <div className="flex-grow-1">
                                             <div className="d-flex align-items-center gap-3 mb-3">
@@ -115,10 +118,10 @@ const ActiveExams = () => {
                                             </div>
                                         </div>
                                         <div className="d-flex gap-2">
-                                            <button onClick={() => handleEditExam(exam._id)} className="btn btn-outline-primary d-flex align-items-center gap-2 btn-hover-scale border-opacity-50">
+                                            <button onClick={(e) => { e.stopPropagation(); handleEditExam(exam._id); }} className="btn btn-outline-primary d-flex align-items-center gap-2 btn-hover-scale border-opacity-50">
                                                 <Edit size={16} /> Edit
                                             </button>
-                                            <button onClick={() => handleDeleteExam(exam._id)} className="btn btn-outline-danger d-flex align-items-center justify-content-center btn-hover-scale border-opacity-50" style={{ width: '44px', height: '44px' }}>
+                                            <button onClick={(e) => { e.stopPropagation(); handleDeleteExam(exam._id); }} className="btn btn-outline-danger d-flex align-items-center justify-content-center btn-hover-scale border-opacity-50" style={{ width: '44px', height: '44px' }}>
                                                 <Trash2 size={18} />
                                             </button>
                                         </div>

@@ -14,6 +14,9 @@ const EditExam = () => {
     title: '',
     subject: '',
     duration: 60,
+    startTime: '',
+    endTime: '',
+    passMarks: 40,
     questions: []
   });
 
@@ -25,14 +28,22 @@ const EditExam = () => {
           headers: { Authorization: `Bearer ${token}` }
         });
         if (res.data.success) {
-          const sanitizedQuestions = res.data.exam.questions.map(q => ({
+          const exam = res.data.exam;
+          const toLocalDT = (iso) => {
+            if (!iso) return '';
+            const d = new Date(iso);
+            return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+          };
+          exam.startTime = toLocalDT(exam.startTime);
+          exam.endTime = toLocalDT(exam.endTime);
+          const sanitizedQuestions = exam.questions.map(q => ({
             ...q,
             testCases: q.testCases || [],
             allowedLanguages: q.allowedLanguages || ['java', 'python', 'c'],
             options: q.options || ['', '', '', ''],
             correctAnswers: q.correctAnswers || (q.correctAnswer ? [q.correctAnswer] : [])
           }));
-          setExamData({ ...res.data.exam, questions: sanitizedQuestions });
+          setExamData({ ...exam, questions: sanitizedQuestions });
         }
       } catch (error) { console.error(error); } finally { setLoading(false); }
     };
@@ -184,6 +195,18 @@ const EditExam = () => {
                 <span className="input-group-text bg-dark bg-opacity-50 border-secondary border-opacity-25 text-white-50"><Clock size={16} /></span>
                 <input name="duration" type="number" value={examData.duration} onChange={handleInputChange} className="form-control form-control-dark text-light" />
               </div>
+            </div>
+            <div className="col-md-4 mt-3">
+              <label className="form-label text-white-50 small fw-bold text-uppercase">Start Time</label>
+              <input name="startTime" type="datetime-local" value={examData.startTime || ''} onChange={handleInputChange} className="form-control form-control-dark text-light" />
+            </div>
+            <div className="col-md-4 mt-3">
+              <label className="form-label text-white-50 small fw-bold text-uppercase">End Time (Emergency Edit)</label>
+              <input name="endTime" type="datetime-local" value={examData.endTime || ''} onChange={handleInputChange} className="form-control form-control-dark text-light" />
+            </div>
+            <div className="col-md-4 mt-3">
+              <label className="form-label text-white-50 small fw-bold text-uppercase">Pass Marks</label>
+              <input name="passMarks" type="number" value={examData.passMarks || ''} onChange={handleInputChange} className="form-control form-control-dark text-light" />
             </div>
           </div>
         </div>
