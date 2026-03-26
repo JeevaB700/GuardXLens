@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { Download, ArrowLeft, Users, AlertTriangle, CheckCircle, XCircle } from 'lucide-react';
 import ExcelJS from 'exceljs';
 import API_BASE_URL from '../../config';
@@ -8,6 +8,7 @@ import API_BASE_URL from '../../config';
 const InstitutionExamResults = () => {
     const { examId } = useParams();
     const navigate = useNavigate();
+    const location = useLocation();
     const [results, setResults] = useState([]);
     const [loading, setLoading] = useState(true);
     const [examInfo, setExamInfo] = useState(null);
@@ -175,7 +176,7 @@ const InstitutionExamResults = () => {
                                         const passMarks = result.examId?.passMarks || 40;
                                         const isPass = !result.isMalpractice && (result.score >= passMarks);
                                         return (
-                                            <tr key={result._id} onClick={() => navigate(`/institution/result-view/${result.studentId?._id}/${result._id}`)} style={{ cursor: 'pointer' }}>
+                                            <tr key={result._id} onClick={() => navigate(`/institution/result-view/${result.studentId?._id}/${result._id}`, { state: { from: location.pathname } })} style={{ cursor: 'pointer' }}>
                                                 <td className="px-4 py-3 border-secondary border-opacity-10">
                                                     <div className="fw-bold text-white mb-1">{result.studentId?.name || 'Unknown Student'}</div>
                                                     <div className="small text-white-50">{result.studentId?.email}</div>

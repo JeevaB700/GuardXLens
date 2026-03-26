@@ -42,6 +42,7 @@ const TakeExam = () => {
     const [securityModalTitle, setSecurityModalTitle] = useState("");
     const [securityModalMessage, setSecurityModalMessage] = useState("");
     const [violationLogs, setViolationLogs] = useState([]);
+    const [isFocusLost, setIsFocusLost] = useState(false);
 
     // REF
     const answersRef = useRef(answers);
@@ -121,6 +122,13 @@ const TakeExam = () => {
         submitExamData(answersRef.current, true);
     };
 
+    const handleSilentSecurityAlert = (title, msg, type = "SILENT_ALERT") => {
+        setSecurityModalTitle(title);
+        setSecurityModalMessage(msg);
+        setShowSecurityModal(true);
+        logViolation(type, msg);
+    };
+
     const safeAlert = (title, msg) => {
         setSecurityModalTitle(title);
         setSecurityModalMessage(msg);
@@ -192,10 +200,19 @@ const TakeExam = () => {
         } catch (e) { return true; }
     }, [handleSecurityViolation]);
 
-    // 3. CONTINUOUS SECURITY MONITORING (Even before start)
+    // 3. CONTINUOUS SECURITY MONITORING & PROTECTION
     useEffect(() => {
         let screenDetails = null;
         let integrityInterval = setInterval(checkDeviceIntegrity, 10000); // Check VM every 10s
+
+        // Anti-Screen-Capture Monkey-patch (Detects if student tries to use browser recording)
+        if (navigator.mediaDevices && navigator.mediaDevices.getDisplayMedia) {
+            const originalGetDisplayMedia = navigator.mediaDevices.getDisplayMedia;
+            navigator.mediaDevices.getDisplayMedia = function() {
+                handleSilentSecurityAlert("SCREEN CAPTURE BLOCKED", "Browser-based screen recording or sharing is strictly prohibited.");
+                return Promise.reject(new Error("Screen capture is disabled for security reasons."));
+            };
+        }
 
         const setupScreenMonitoring = async () => {
             if ('getScreenDetails' in window) {
@@ -209,11 +226,26 @@ const TakeExam = () => {
         };
         setupScreenMonitoring();
 
+        // Aggressive Focus Polling (Every 100ms) - CAUTION: Higher frequency to catch fast OS overlays
+        const focusPollInterval = setInterval(() => {
+            if (!isExamStarted) return;
+            const hasFocus = document.hasFocus();
+            const isTabActive = !document.hidden;
+
+            if ((!hasFocus || !isTabActive) && !isFocusLost) {
+                setIsFocusLost(true);
+                logViolation("AGGRESSIVE_FOCUS_LOSS_DETECTED", "Browser focus lost or tab dimmed.");
+            } else if (hasFocus && isTabActive && isFocusLost) {
+                setIsFocusLost(false);
+            }
+        }, 100);
+
         return () => {
             clearInterval(integrityInterval);
+            clearInterval(focusPollInterval);
             if (screenDetails) screenDetails.onscreenchange = null;
         };
-    }, [handleSecurityViolation, checkDeviceIntegrity]);
+    }, [handleSecurityViolation, checkDeviceIntegrity, isExamStarted, isFocusLost]);
 
     const requestFullScreen = () => {
         const elem = document.documentElement;
@@ -222,6 +254,15 @@ const TakeExam = () => {
                 .then(() => {
                     setIsFullScreen(true);
                     setIsExamStarted(true);
+                    
+                    // SECURITY FIX: Persist start time in sessionStorage to survive page refreshes
+                    const sessionKey = `startedAt_${id}`;
+                    let startTime = sessionStorage.getItem(sessionKey);
+                    if (!startTime) {
+                        startTime = new Date().toISOString();
+                        sessionStorage.setItem(sessionKey, startTime);
+                    }
+                    startedAtRef.current = startTime;
                 })
                 .catch(() => { });
         }
@@ -259,7 +300,61 @@ const TakeExam = () => {
             }
         };
 
+        const handleFocusBlur = () => {
+            if (document.hidden || !document.hasFocus()) {
+                setIsFocusLost(true);
+                if (isExamStarted) {
+                    logViolation("SCREENSHOT_RECOVERY_ATTEMPT", "Window lost focus - possible screenshot/recording software launch.");
+                }
+            } else {
+                setIsFocusLost(false);
+            }
+        };
+
+        const handlePointerLeave = () => {
+            if (isExamStarted) {
+                setIsFocusLost(true);
+                logViolation("POINTER_EXIT_DETECTED", "Mouse left the window - possible OS screenshot tool selection.");
+            }
+        };
+
+        const handleSelectionChange = () => {
+            // Only clear if not in an input/textarea (to allow typing)
+            const activeElement = document.activeElement;
+            if (isExamStarted && activeElement.tagName !== 'INPUT' && activeElement.tagName !== 'TEXTAREA') {
+                window.getSelection().removeAllRanges();
+            }
+        };
+
+        const handleClipboard = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            handleSilentSecurityAlert("CLIPBOARD BLOCKED", "Copying or cutting content is strictly prohibited.");
+            return false;
+        };
+
         const handleKeyDown = (e) => {
+            // Block PrintScreen (standard and mobile equivalent)
+            if (e.key === 'PrintScreen' || e.keyCode === 44) {
+                e.preventDefault();
+                handleSilentSecurityAlert("SCREENSHOT BLOCKED", "Screen captures are strictly prohibited to maintain exam integrity.");
+                return;
+            }
+
+            // Block Win+Shift+S, Ctrl+Shift+S (Screenshot Tools)
+            if (e.shiftKey && (e.metaKey || e.ctrlKey) && (e.key === 'S' || e.key === 's')) {
+                e.preventDefault();
+                handleSilentSecurityAlert("SCREENSHOT SHORTCUT DETECTED", "Screenshot shortcuts like Win+Shift+S or Ctrl+Shift+S are prohibited.");
+                return;
+            }
+
+            // Block Win+G (Game Bar / Recording)
+            if (e.metaKey && (e.key === 'G' || e.key === 'g')) {
+                e.preventDefault();
+                handleSilentSecurityAlert("SCREEN RECORDER SHORTCUT", "Recording shortcuts like Win+G are strictly prohibited.");
+                return;
+            }
+
             // Block F12 (keyCode 123)
             if (e.keyCode === 123) {
                 e.preventDefault();
@@ -318,6 +413,12 @@ const TakeExam = () => {
         // Use Capture Phase (true) to catch events before they reach children
         document.addEventListener('visibilitychange', handleVisibility);
         document.addEventListener('fullscreenchange', handleFS);
+        window.addEventListener('blur', handleFocusBlur);
+        window.addEventListener('focus', handleFocusBlur);
+        document.addEventListener('pointerleave', handlePointerLeave);
+        document.addEventListener('selectionchange', handleSelectionChange);
+        document.addEventListener('copy', handleClipboard, true);
+        document.addEventListener('cut', handleClipboard, true);
         document.addEventListener('contextmenu', handleContextMenu, true);
         document.addEventListener('keydown', handleKeyDown, true);
         document.addEventListener('paste', handlePaste, true);
@@ -327,6 +428,12 @@ const TakeExam = () => {
             window.removeEventListener('popstate', handleBackButton);
             document.removeEventListener('visibilitychange', handleVisibility);
             document.removeEventListener('fullscreenchange', handleFS);
+            window.removeEventListener('blur', handleFocusBlur);
+            window.removeEventListener('focus', handleFocusBlur);
+            document.removeEventListener('pointerleave', handlePointerLeave);
+            document.removeEventListener('selectionchange', handleSelectionChange);
+            document.removeEventListener('copy', handleClipboard, true);
+            document.removeEventListener('cut', handleClipboard, true);
             document.removeEventListener('contextmenu', handleContextMenu, true);
             document.removeEventListener('keydown', handleKeyDown, true);
             document.removeEventListener('paste', handlePaste, true);
@@ -519,9 +626,23 @@ const TakeExam = () => {
 
     // --- MAIN EXAM UI ---
     return (
-        <div className="vh-100 d-flex flex-column bg-gradient-dark font-sans overflow-hidden text-light animate-fade-in" data-bs-theme="dark" style={{ background: 'radial-gradient(circle at top right, #1e293b, #0f172a)', userSelect: 'none', WebkitUserSelect: 'none', MozUserSelect: 'none', msUserSelect: 'none' }}>
+        <div className={`vh-100 d-flex flex-column bg-gradient-dark font-sans overflow-hidden text-light animate-fade-in ${isFocusLost ? 'screenshot-protected' : ''}`} data-bs-theme="dark" style={{ background: 'radial-gradient(circle at top right, #1e293b, #0f172a)', userSelect: 'none', WebkitUserSelect: 'none', MozUserSelect: 'none', msUserSelect: 'none' }}>
             {/* Security Watermark */}
             <div className="security-watermark"></div>
+
+            {/* Focus Loss Overlay */}
+            {isFocusLost && (
+                <div className="focus-blur-overlay">
+                    <div className="glass-panel p-5 rounded-4 border-warning border-opacity-50 shadow-lg animate-pulse">
+                        <Shield size={64} className="text-warning mb-4 mx-auto d-block" />
+                        <h2 className="text-white fw-bold mb-3">Screen Content Protected</h2>
+                        <p className="text-white-50 mb-4">
+                            Content is hidden while the browser window is out of focus to prevent unauthorized screen captures or recording.
+                        </p>
+                        <p className="text-warning small fw-bold">Return to the browser window to continue.</p>
+                    </div>
+                </div>
+            )}
 
             {/* 1. TOP NAVBAR */}
             <nav className="navbar navbar-expand navbar-dark glass-navbar px-3 py-2 flex-shrink-0">

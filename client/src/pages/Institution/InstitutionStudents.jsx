@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { User, ChevronRight, FileText, AlertTriangle, X, Clock, ShieldAlert, ArrowLeft, GraduationCap, TrendingUp, CheckCircle, Search, Shield, Terminal } from 'lucide-react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import API_BASE_URL from '../../config';
 
 const InstitutionStudents = () => {
@@ -15,6 +15,7 @@ const InstitutionStudents = () => {
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const navigate = useNavigate();
+    const location = useLocation();
     const [searchParams] = useSearchParams();
 
     useEffect(() => {
@@ -195,7 +196,7 @@ const InstitutionStudents = () => {
                                 return (
                                     <div 
                                         key={idx} 
-                                        onClick={() => navigate(`/institution/result-view/${selectedStudent._id}/${r._id}`)}
+                                        onClick={() => navigate(`/institution/result-view/${selectedStudent._id}/${r._id}`, { state: { from: location.pathname + location.search } })}
                                         className="card glass-panel border border-white border-opacity-5 shadow-sm hover-bg-light-5 cursor-pointer transition-all animate-slide-up"
                                     >
                                         <div className="card-body p-3 d-flex align-items-center justify-content-between">

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { Target, Clock, CheckCircle, XCircle, AlertTriangle, ArrowLeft, FileText, ShieldAlert, Award, Terminal, History, ChevronRight, Lock } from 'lucide-react';
 import API_BASE_URL from '../../config';
 
@@ -10,6 +10,8 @@ const AdminResultView = () => {
     const [examDetails, setExamDetails] = useState(null);
     const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
+    const location = useLocation();
+
 
     useEffect(() => {
         const fetchDetails = async () => {
@@ -73,7 +75,7 @@ const AdminResultView = () => {
             <nav className="navbar navbar-dark glass-navbar px-4 py-2 sticky-top flex-shrink-0">
                 <div className="container-fluid d-flex align-items-center justify-content-between flex-nowrap">
                     <div className="d-flex align-items-center gap-3">
-                        <button onClick={() => navigate(`/institution/students?id=${studentId}`)} className="btn btn-link text-white-50 p-1 hover-text-white transition-all shadow-none" title="Back">
+                        <button onClick={() => navigate(location.state?.from || `/institution/students?id=${studentId}`)} className="btn btn-link text-white-50 p-1 hover-text-white transition-all shadow-none" title="Back">
                             <ArrowLeft size={20} />
                         </button>
                         <div className="vr text-secondary opacity-50 d-none d-sm-block"></div>
