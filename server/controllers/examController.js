@@ -3,10 +3,22 @@ const Exam = require('../models/Exam');
 const Result = require('../models/Result');
 const PDFParser = require("pdf2json");
 const mammoth = require("mammoth"); // Added for DOCX
-const { GoogleGenerativeAI } = require("@google/generative-ai");
+const Groq = require("groq-sdk");
 
-// Initialize Gemini
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+// Initialize Groq
+const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+
+// Helper: Extract JSON from AI response
+const extractJSON = (text) => {
+  try {
+    const start = text.indexOf('[');
+    const end = text.lastIndexOf(']') + 1;
+    if (start === -1 || end === 0) return null;
+    return JSON.parse(text.substring(start, end));
+  } catch (e) {
+    return null;
+  }
+};
 
 // Helper: Parse PDF (Updated for memory storage)
 const parsePDF = (buffer) => {
@@ -57,48 +69,48 @@ const extractQuestions = async (req, res) => {
       return res.status(400).json({ message: "Document appears empty or unreadable." });
     }
 
-    // 2. Send to AI
-    const model = genAI.getGenerativeModel({ model: "gemini-flash-latest" });
-
-    // Updated prompt to be more robust for different text formats
+    // 2. Send to AI (Groq - llama-3.1-8b-instant)
     const prompt = `
-      You are an exam creator. Extract questions from the text below and return them as a JSON array.
+      You are an expert exam extractor. Your task is to extract questions from the provided document text exactly as they are written.
       
-      Strict Rules:
-      1. Return ONLY valid JSON. Do not wrap in markdown (no \`\`\`json).
-      2. Format: 
-      [
-        { 
-          "questionText": "Question here...", 
-          "type": "MCQ" | "SHORT" | "CODE", 
-          "options": ["A","B","C","D"], // Required for MCQ only
-          "correctAnswers": ["Selected Option Text"], // Required for MCQ only. Can have multiple strings for Multiple Choice Questions.
-          "marks": 5, 
-          "allowedLanguages": ["java", "python", "c"], // Required for CODE only
-          "testCases": [{"input":"1 2", "output":"3"}] // Required for CODE only
-        }
-      ]
-      3. For 'correctAnswers', use the full text of the options, not just the letter. Always return an array even for single answers.
-      
-      Document Text: 
+      STARK JSON FORMAT RULES:
+      Return a JSON array of objects with these fields:
+      1. "questionText" (String): The text of the question. 
+         - DO NOT include options (A,B,C,D) or correct answers in this field.
+      2. "type" (String): "MCQ", "SHORT", or "CODE".
+      3. "options" (Array of 4 Strings): Required for MCQ only.
+      4. "correctAnswers" (Array of Strings): Required for MCQ only.
+         - Find the correct answer in the text (often marked as "Ans.", "Answer:", "Key:", etc.).
+         - This field MUST contain the FULL TEXT of the corresponding option, NOT just the letter.
+         - Example: If the text says "b) Big Data" and "Ans. b", then correctAnswers should be ["Big Data"].
+      5. "marks" (Number): Default is 5.
+      6. "allowedLanguages" (Array): Required for CODE only.
+      7. "testCases" (Array): Required for CODE only.
+
+      STRICT EXTRACTION CONSTRAINTS:
+      - ONLY extract questions that are explicitly present in the document.
+      - DO NOT generate, create, or invent any new questions. 
+      - If there are 10 questions in the text, extract exactly 10.
+      - DO NOT add conversational text. Return ONLY the JSON array.
+      - For SHORT questions: Extract only the question line. If an answer follows it, IGNORE the answer.
+      - **SPACING FIX**: If the input text has missing spaces (e.g., "Ciswhatkindoflanguage"), you MUST correctly restore the spaces in "questionText" and "options" (e.g., "C is what kind of language").
+
+      DOCUMENT TEXT TO PROCESS:
       ${extractedText.substring(0, 30000)}
     `;
 
-    const result = await model.generateContent(prompt);
-    let text = result.response.text();
+    const chatCompletion = await groq.chat.completions.create({
+      messages: [{ role: "user", content: prompt }],
+      model: "llama-3.1-8b-instant",
+    });
 
-    // Clean AI response (remove markdown if AI ignores rule)
-    text = text.replace(/```json/g, '').replace(/```/g, '').trim();
+    let text = chatCompletion.choices[0].message.content;
+    let questions = extractJSON(text);
 
-    let questions;
-    try {
-      questions = JSON.parse(text);
-    } catch (e) {
+    if (!questions) {
       console.error("AI JSON Parse Error. Raw text:", text);
-      return res.status(500).json({ message: "AI generation failed. Please try a cleaner document." });
+      return res.status(500).json({ message: "AI generation failed to produce valid question format." });
     }
-
-    // No cleanup needed for memory storage
 
     res.json({ success: true, questions });
 
@@ -111,7 +123,7 @@ const extractQuestions = async (req, res) => {
 // 2. SAVE EXAM
 const saveExam = async (req, res) => {
   try {
-    const { title, subject, duration, questions, startTime, endTime, passMarks } = req.body;
+    const { title, subject, duration, questions, startTime, endTime, passMarks, cameraMonitoring } = req.body;
     const institutionId = req.user.institutionId;
 
     const totalMarks = questions.reduce((sum, q) => sum + (parseInt(q.marks) || 0), 0);
@@ -119,6 +131,7 @@ const saveExam = async (req, res) => {
     const newExam = new Exam({
       title, subject, duration, questions, totalMarks,
       startTime, endTime, passMarks,
+      cameraMonitoring: cameraMonitoring !== undefined ? cameraMonitoring : true,
       institutionId: institutionId || null
     });
 
@@ -202,7 +215,7 @@ const getExamForStudent = async (req, res) => {
 const updateExam = async (req, res) => {
   try {
     const { id } = req.params;
-    const { title, subject, duration, questions, startTime, endTime, passMarks } = req.body;
+    const { title, subject, duration, questions, startTime, endTime, passMarks, cameraMonitoring } = req.body;
 
     const totalMarks = questions ? questions.reduce((sum, q) => sum + (parseInt(q.marks) || 0), 0) : undefined;
     
@@ -214,6 +227,7 @@ const updateExam = async (req, res) => {
     if (startTime) updateFields.startTime = startTime;
     if (endTime) updateFields.endTime = endTime;
     if (passMarks !== undefined) updateFields.passMarks = passMarks;
+    if (cameraMonitoring !== undefined) updateFields.cameraMonitoring = cameraMonitoring;
 
     const updatedExam = await Exam.findByIdAndUpdate(
       id,
@@ -315,32 +329,31 @@ const generateTestCases = async (req, res) => {
   if (!questionText) return res.status(400).json({ message: "Question text required" });
 
   try {
-    // Use gemini-1.5-flash for speed and logic
-    const model = genAI.getGenerativeModel({ model: "gemini-flash-latest" });
-
+    // Use llama-4-scout-17b-16e-instruct for test case generation
     const prompt = `
       You are a strict Competitive Programming Judge. 
       Generate 3 test cases for this coding problem: "${questionText}".
       
-      CRITICAL RULES FOR INPUT/OUTPUT:
-      1. Input must be RAW DATA ONLY. Do not use sentences like "The numbers are..." or "Input is...".
-      2. If the problem asks for numbers, provide ONLY space-separated numbers (e.g., "5 10 2").
-      3. Output must be RAW DATA ONLY. No labels like "Sum = ".
-      4. Return ONLY a valid JSON Array. No Markdown.
+      Rules:
+      1. Input must be RAW DATA ONLY (e.g., "5 10").
+      2. Output must be RAW DATA ONLY (e.g., "15").
+      3. Return ONLY a valid JSON Array. No labels, no preamble, no markdown.
       
-      Example Format: 
-      [{"input": "5 10 2", "output": "17"}, {"input": "1 1 1", "output": "3"}]
+      Format: 
+      [{"input": "input1", "output": "output1"}, {"input": "input2", "output": "output2"}]
     `;
 
-    const result = await model.generateContent(prompt);
-    const text = result.response.text().replace(/```json/g, '').replace(/```/g, '').trim();
+    const chatCompletion = await groq.chat.completions.create({
+      messages: [{ role: "user", content: prompt }],
+      model: "meta-llama/llama-4-scout-17b-16e-instruct",
+    });
 
-    let testCases = [];
-    try {
-      testCases = JSON.parse(text);
-    } catch (parseError) {
+    const text = chatCompletion.choices[0].message.content;
+    let testCases = extractJSON(text);
+
+    if (!testCases) {
       // Fallback: If AI fails JSON, return a dummy case so the UI doesn't break
-      testCases = [{ input: "Sample Input", output: "Sample Output" }];
+      testCases = [{ input: "5", output: "Please provide valid question." }];
     }
 
     res.json({ success: true, testCases });

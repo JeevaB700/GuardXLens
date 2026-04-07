@@ -4,8 +4,7 @@ import './CyberBackground.css';
 
 const CyberBackground = () => {
     const location = useLocation();
-
-    // Do NOT render animations during exam for performance and stability
+    // Skip during exam for performance & stability
     if (location.pathname.includes('/take-exam')) return null;
 
     return (
@@ -14,6 +13,9 @@ const CyberBackground = () => {
             <div className="cyber-grid"></div>
             <div className="cyber-scanner"></div>
             <div className="cyber-glow"></div>
+            <div className="cyber-glow-2"></div>
+            <div className="cyber-corner-accent"></div>
+            <div className="cyber-corner-accent-2"></div>
         </div>
     );
 };

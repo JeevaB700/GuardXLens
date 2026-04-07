@@ -52,9 +52,10 @@ const TakeExam = () => {
     const MAX_WARNINGS = 2;
 
     const getBoilerplate = (lang) => {
-        if (lang === 'java') return `import java.io.*;\nimport java.util.*;\n\nclass Main {\n    public static void main(String[] args) throws IOException {\n        // Write Java Code\n    }\n}`;
-        if (lang === 'python') return `# Write Python Code\nimport sys\n`;
-        if (lang === 'c' || lang === 'cpp') return `#include <stdio.h>\n\nint main() {\n    // Write C code\n    return 0;\n}`;
+        if (lang === 'java') return `import java.util.*;\nimport java.io.*;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        // Read input using sc.nextLine() or sc.nextInt()\n        \n        // Write your logic here\n        \n    }\n}`;
+        if (lang === 'python') return `import sys\n\n# Read input from sys.stdin\n# for line in sys.stdin:\n#     print(line)\n\n# Write your logic here\n`;
+        if (lang === 'c') return `#include <stdio.h>\n\nint main() {\n    // Use scanf() to read input\n    \n    // Write your logic here\n    \n    return 0;\n}`;
+        if (lang === 'cpp') return `#include <iostream>\nusing namespace std;\n\nint main() {\n    // Use cin >> to read input\n    \n    // Write your logic here\n    \n    return 0;\n}`;
         return `// Write Code`;
     };
 
@@ -653,7 +654,9 @@ const TakeExam = () => {
                         </div>
                         <div className="d-none d-md-block">
                             <h6 className="mb-0 text-white fw-bold">{exam.title}</h6>
-                            <span className="badge bg-success-subtle text-success border border-success-subtle" style={{ fontSize: '0.65rem' }}>PROCTORING ACTIVE</span>
+                            <span className={`badge ${exam.cameraMonitoring ? 'bg-info-subtle text-info border-info' : 'bg-warning-subtle text-warning border-warning'} border border-opacity-25`} style={{ fontSize: '0.65rem' }}>
+                                {exam.cameraMonitoring ? 'AI PROCTORING ACTIVE' : 'STANDARD SECURITY ACTIVE'}
+                            </span>
                         </div>
                     </div>
 
@@ -790,7 +793,9 @@ const TakeExam = () => {
                                     className="form-select form-select-sm bg-dark text-white border-secondary border-opacity-50"
                                     style={{ width: 'auto' }}
                                 >
-                                    {currentQ.allowedLanguages?.map(l => <option key={l} value={l}>{l.toUpperCase()}</option>)}
+                                    {[...new Set(currentQ.allowedLanguages || [])].map(l => (
+                                        <option key={l} value={l}>{l.toUpperCase()}</option>
+                                    ))}
                                 </select>
                                 <button onClick={handleRunCode} disabled={isRunning} className="btn btn-success btn-sm d-flex align-items-center gap-2 shadow-sm btn-hover-scale">
                                     <Play size={14} /> Run Code
@@ -853,7 +858,7 @@ const TakeExam = () => {
             </div>
 
             {/* AI Proctoring Component */}
-            <WebcamProctor onViolation={handleSecurityViolation} />
+            {exam.cameraMonitoring && <WebcamProctor onViolation={handleSecurityViolation} />}
         </div>
     );
 };

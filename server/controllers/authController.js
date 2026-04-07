@@ -4,6 +4,28 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const nodemailer = require('nodemailer');
+const {
+  studentWelcomeTemplate,
+  institutionStudentNotificationTemplate,
+  passwordResetTemplate,
+  institutionApprovalTemplate,
+  institutionWelcomeTemplate
+} = require('../utils/emailTemplates');
+
+// Helper to get transporter
+const getTransporter = () => {
+  const cleanEmail = process.env.EMAIL_USER?.trim();
+  const cleanPass = process.env.EMAIL_PASS?.replace(/\s/g, '');
+
+  if (!cleanEmail || !cleanPass || cleanEmail === 'your-email@gmail.com') {
+    return null;
+  }
+
+  return nodemailer.createTransport({
+    service: 'gmail',
+    auth: { user: cleanEmail, pass: cleanPass },
+  });
+};
 
 // 1. REGISTER STUDENT
 const registerStudent = async (req, res) => {
@@ -20,12 +42,44 @@ const registerStudent = async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    await User.create({
+    const student = await User.create({
       name, email, password: hashedPassword, role: 'student', institutionId
     });
 
-    res.status(201).json({ success: true, message: "Student registered successfully" });
-  } catch (error) { res.status(500).json({ message: "Server Error" }); }
+    // --- SEND EMAILS ---
+    try {
+      const institution = await Institution.findById(institutionId);
+      const transporter = getTransporter();
+
+      if (transporter && institution) {
+        // 1. To Student
+        await transporter.sendMail({
+          from: `"GuardXLens" <${process.env.EMAIL_USER}>`,
+          to: email,
+          subject: 'Welcome to GuardXLens!',
+          html: studentWelcomeTemplate(name, institution.name)
+        });
+
+        // 2. To Institution
+        await transporter.sendMail({
+          from: `"GuardXLens System" <${process.env.EMAIL_USER}>`,
+          to: institution.email,
+          subject: 'New Student Registration',
+          html: institutionStudentNotificationTemplate(name, email)
+        });
+        console.log(`✅ Registration emails sent for ${email}`);
+      } else {
+        console.log("ℹ️ Dev Mode: Emails skipped (Not configured or Institution not found)");
+      }
+    } catch (mailErr) {
+      console.error("❌ Registration Email Error:", mailErr.message);
+    }
+
+    res.status(201).json({ success: true, message: "Student registered successfully. Welcome email sent!" });
+  } catch (error) { 
+    console.error(error);
+    res.status(500).json({ message: "Server Error" }); 
+  }
 };
 
 // 2. REGISTER INSTITUTION (Sends Request to Admin)
@@ -55,39 +109,17 @@ const registerInstitution = async (req, res) => {
     console.log(approveUrl);
     console.log("-----------------------------------------");
 
-    const htmlMessage = `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 8px;">
-        <h2 style="color: #1e293b; margin-top: 0;">New Institution Request</h2>
-        <p>A new institution has requested to join GuardXLens.</p>
-        <ul style="list-style-type: none; padding-left: 0;">
-          <li style="margin-bottom: 8px;"><strong>Institution:</strong> ${institutionName}</li>
-          <li style="margin-bottom: 8px;"><strong>Admin Name:</strong> ${adminName}</li>
-          <li style="margin-bottom: 8px;"><strong>Contact Email:</strong> ${email}</li>
-        </ul>
-        <div style="margin-top: 35px; text-align: center;">
-          <a href="${approveUrl}" style="background-color: #22c55e; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">Approve Institution</a>
-        </div>
-        <p style="margin-top: 30px; color: #64748b; font-size: 14px;">If you do not wish to approve this request, safely ignore this email.</p>
-      </div>
-    `;
+    const htmlMessage = institutionApprovalTemplate(institutionName, adminName, email, approveUrl);
 
     try {
-      // If user hasn't configured email...
-      if (!process.env.EMAIL_USER || process.env.EMAIL_USER === 'your-email@gmail.com') {
+      const transporter = getTransporter();
+      if (!transporter) {
         console.log("ℹ️ SYSTEM: Email not configured fully. Staying in Dev Mode.");
         return res.status(200).json({ 
           success: true, 
           message: "Registration submitted (Dev Mode: Check Server Console for approval link)" 
         });
       }
-
-      const cleanEmail = process.env.EMAIL_USER.trim();
-      const cleanPass = process.env.EMAIL_PASS.replace(/\s/g, '');
-
-      const transporter = nodemailer.createTransport({
-        service: 'gmail',
-        auth: { user: cleanEmail, pass: cleanPass },
-      });
 
       const mailOptions = {
         from: `"GuardXLens Admin System" <${process.env.EMAIL_USER}>`,
@@ -162,19 +194,13 @@ const approveInstitution = async (req, res) => {
     `;
 
     try {
-      if (process.env.EMAIL_USER && process.env.EMAIL_USER !== 'your-email@gmail.com') {
-        const cleanEmail = process.env.EMAIL_USER.trim();
-        const cleanPass = process.env.EMAIL_PASS.replace(/\s/g, '');
-        const transporter = nodemailer.createTransport({
-          service: 'gmail',
-          auth: { user: cleanEmail, pass: cleanPass },
-        });
-
+      const transporter = getTransporter();
+      if (transporter) {
         await transporter.sendMail({
           from: `"GuardXLens Admin" <${process.env.EMAIL_USER}>`,
           to: email, // Send to the newly approved institution
           subject: 'GuardXLens Account Approved!',
-          html: welcomeHtml,
+          html: institutionWelcomeTemplate(institutionName, adminName, loginUrl),
         });
         console.log(`✅ Welcome approval email sent to ${email}`);
       }
@@ -289,37 +315,11 @@ const forgotPassword = async (req, res) => {
 
     const message = `You are receiving this email because you (or someone else) has requested the reset of a password. Please use the following link to reset your password: \n\n ${resetUrl}`;
 
-    const htmlMessage = `
-      <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; background-color: #f9f9f9; padding: 20px; border-radius: 10px; border: 1px solid #e0e0e0;">
-        <div style="text-align: center; margin-bottom: 30px;">
-          <h1 style="color: #1e293b; margin: 0;">GuardXLens</h1>
-          <p style="color: #64748b; font-size: 14px;">Secure Exam Monitoring System</p>
-        </div>
-        
-        <div style="background-color: #ffffff; padding: 30px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
-          <h2 style="color: #1e293b; margin-top: 0;">Password Reset Request</h2>
-          <p style="color: #475569; line-height: 1.6;">You are receiving this email because you (or someone else) has requested the reset of a password for your account.</p>
-          
-          <div style="text-align: center; margin: 35px 0;">
-            <a href="${resetUrl}" style="background-color: #3b82f6; color: #ffffff; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block; transition: background-color 0.3s ease;">Reset Your Password</a>
-          </div>
-          
-          <p style="color: #475569; line-height: 1.6;">If you did not request this, please ignore this email and your password will remain unchanged.</p>
-          <p style="color: #475569; line-height: 1.6; font-size: 14px;">This link will expire in 30 minutes.</p>
-        </div>
-        
-        <div style="text-align: center; margin-top: 30px; color: #94a3b8; font-size: 12px;">
-          <p>Alternatively, copy and paste this link into your browser:</p>
-          <p style="word-break: break-all;"><a href="${resetUrl}" style="color: #3b82f6;">${resetUrl}</a></p>
-          <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 20px 0;">
-          <p>&copy; ${new Date().getFullYear()} GuardXLens. All rights reserved.</p>
-        </div>
-      </div>
-    `;
+    const htmlMessage = passwordResetTemplate(resetUrl);
 
     try {
-      // If user hasn't configured email, don't crash, just return success so they can check console
-      if (!process.env.EMAIL_USER || process.env.EMAIL_USER === 'your-email@gmail.com') {
+      const transporter = getTransporter();
+      if (!transporter) {
         console.log("ℹ️ SYSTEM: Email settings not configured properly in .env. Staying in Dev Mode.");
         return res.json({
           success: true,
@@ -329,23 +329,10 @@ const forgotPassword = async (req, res) => {
 
       console.log(`📧 Attempting to send email to: ${user.email} using ${process.env.EMAIL_USER}...`);
 
-      // Clean the credentials (remove spaces)
-      const cleanEmail = process.env.EMAIL_USER.trim();
-      const cleanPass = process.env.EMAIL_PASS.replace(/\s/g, '');
-
-      const transporter = nodemailer.createTransport({
-        service: 'gmail',
-        auth: {
-          user: cleanEmail,
-          pass: cleanPass,
-        },
-      });
-
       const mailOptions = {
         from: `"GuardXLens Support" <${process.env.EMAIL_USER}>`,
         to: user.email,
         subject: 'Password Recovery Request',
-        text: message,
         html: htmlMessage,
       };
 

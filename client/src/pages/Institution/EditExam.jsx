@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { Save, Trash2, ArrowLeft, Plus, CheckCircle, Code, Type, List, Wand2, X, FileEdit, Clock, Layers } from 'lucide-react';
+import { Save, Trash2, ArrowLeft, Plus, CheckCircle, Code, Type, List, Wand2, X, FileEdit, Clock, Layers, CloudLightning } from 'lucide-react';
 import API_BASE_URL from '../../config';
 
 const EditExam = () => {
@@ -17,6 +17,7 @@ const EditExam = () => {
     startTime: '',
     endTime: '',
     passMarks: 40,
+    cameraMonitoring: true,
     questions: []
   });
 
@@ -39,11 +40,11 @@ const EditExam = () => {
           const sanitizedQuestions = exam.questions.map(q => ({
             ...q,
             testCases: q.testCases || [],
-            allowedLanguages: q.allowedLanguages || ['java', 'python', 'c'],
+            allowedLanguages: [...new Set(q.allowedLanguages || ['java', 'python', 'c'])],
             options: q.options || ['', '', '', ''],
             correctAnswers: q.correctAnswers || (q.correctAnswer ? [q.correctAnswer] : [])
           }));
-          setExamData({ ...exam, questions: sanitizedQuestions });
+          setExamData({ ...exam, questions: sanitizedQuestions, cameraMonitoring: exam.cameraMonitoring !== undefined ? exam.cameraMonitoring : true });
         }
       } catch (error) { console.error(error); } finally { setLoading(false); }
     };
@@ -77,7 +78,7 @@ const EditExam = () => {
 
   const toggleLanguage = (qIndex, lang) => {
     const updated = [...examData.questions];
-    const currentLangs = updated[qIndex].allowedLanguages || [];
+    const currentLangs = [...new Set(updated[qIndex].allowedLanguages || [])];
     if (currentLangs.includes(lang)) {
       updated[qIndex].allowedLanguages = currentLangs.filter(l => l !== lang);
     } else {
@@ -139,9 +140,11 @@ const EditExam = () => {
   const handleSave = async () => {
     try {
       const token = sessionStorage.getItem('token');
-      await axios.put(`${API_BASE_URL}/api/admin/exam/${id}`, examData, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const { title, subject, duration, questions, startTime, endTime, passMarks, cameraMonitoring } = examData;
+      await axios.put(`${API_BASE_URL}/api/admin/update/${id}`,
+        { title, subject, duration, questions, startTime, endTime, passMarks, cameraMonitoring },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
       alert("Exam updated successfully!");
       navigate('/institution/dashboard');
     } catch (error) { alert("Failed to update exam."); }
@@ -206,7 +209,39 @@ const EditExam = () => {
             </div>
             <div className="col-md-4 mt-3">
               <label className="form-label text-white-50 small fw-bold text-uppercase">Pass Marks</label>
-              <input name="passMarks" type="number" value={examData.passMarks || ''} onChange={handleInputChange} className="form-control form-control-dark text-light" />
+              <input
+                type="number"
+                name="passMarks"
+                value={examData.passMarks}
+                onChange={handleInputChange}
+                className="form-control form-control-dark font-monospace text-warning border-warning border-opacity-25 shadow-none"
+                required
+              />
+            </div>
+          </div>
+
+          {/* Camera Monitoring Toggle */}
+          <div className="card bg-dark bg-opacity-25 border-0 rounded-3 mt-4 overflow-hidden border-start border-info border-4 shadow-sm">
+            <div className="card-body p-3 d-flex align-items-center justify-content-between">
+              <div className="d-flex align-items-center gap-3">
+                <div className={`p-2 rounded-3 ${examData.cameraMonitoring ? 'bg-info' : 'bg-secondary'} bg-opacity-25`}>
+                  <CloudLightning size={20} className={examData.cameraMonitoring ? 'text-white' : 'text-secondary'} />
+                </div>
+                <div>
+                  <div className="text-white small fw-bold">Camera Monitoring</div>
+                  <div className="text-white-50 tiny text-uppercase tracking-wider" style={{ fontSize: '0.65rem' }}>AI Face & Phone Detection</div>
+                </div>
+              </div>
+              <div className="form-check form-switch m-0 p-0 d-flex align-items-center">
+                <input
+                  className="form-check-input ms-0 shadow-none cursor-pointer"
+                  type="checkbox"
+                  role="switch"
+                  checked={examData.cameraMonitoring}
+                  onChange={(e) => setExamData({ ...examData, cameraMonitoring: e.target.checked })}
+                  style={{ width: '2.5em', height: '1.25em' }}
+                />
+              </div>
             </div>
           </div>
         </div>
@@ -284,7 +319,7 @@ const EditExam = () => {
                   <div className="p-4 rounded-4 bg-dark bg-opacity-50 border border-white border-opacity-10">
                     <div className="d-flex justify-content-between align-items-center mb-4">
                       <label className="text-white-50 small fw-bold text-uppercase">Test Cases</label>
-                      <button onClick={() => generateTestCases(i)} disabled={generating === i} className="btn btn-sm btn-outline-info d-flex align-items-center gap-2 btn-hover-scale border-opacity-25 text-info px-3">
+                      <button onClick={() => generateTestCases(i)} disabled={generating === i} className="btn btn-sm btn-outline-info d-flex align-items-center gap-2 btn-hover-scale px-3">
                         {generating === i ? <span className="spinner-border spinner-border-sm" /> : <><Wand2 size={14} /> AI Generate</>}
                       </button>
                     </div>

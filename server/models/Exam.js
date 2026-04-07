@@ -37,6 +37,7 @@ const examSchema = new mongoose.Schema({
     ref: 'Institution',
     required: true
   },
+  cameraMonitoring: { type: Boolean, default: true },
   // -------------------------------------------
 
   createdAt: { type: Date, default: Date.now }

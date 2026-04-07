@@ -16,7 +16,8 @@ const CreateExam = () => {
 
     const [examData, setExamData] = useState({
         title: '', subject: '', duration: 60, questions: [],
-        startTime: '', endTime: '', passMarks: 40
+        startTime: '', endTime: '', passMarks: 40,
+        cameraMonitoring: true
     });
 
     const handleInputChange = (e) => setExamData({ ...examData, [e.target.name]: e.target.value });
@@ -54,7 +55,7 @@ const CreateExam = () => {
     // Coding Handlers
     const toggleLanguage = (qIndex, lang) => {
         const updated = [...examData.questions];
-        const currentLangs = updated[qIndex].allowedLanguages || [];
+        const currentLangs = [...new Set(updated[qIndex].allowedLanguages || [])];
         if (currentLangs.includes(lang)) {
             updated[qIndex].allowedLanguages = currentLangs.filter(l => l !== lang);
         } else {
@@ -140,7 +141,7 @@ const CreateExam = () => {
                     type: q.type || 'SHORT',
                     options: q.options || (q.type === 'MCQ' ? ['', '', '', ''] : []),
                     correctAnswers: q.correctAnswers || (q.correctAnswer ? [q.correctAnswer] : []),
-                    allowedLanguages: q.allowedLanguages || (q.type === 'CODE' ? ['java', 'python'] : []),
+                    allowedLanguages: [...new Set(q.allowedLanguages || (q.type === 'CODE' ? ['java', 'python'] : []))],
                     testCases: q.testCases || (q.type === 'CODE' ? [{ input: '', output: '' }] : [])
                 }));
                 // Append generated questions
@@ -270,10 +271,35 @@ const CreateExam = () => {
                                     type="number"
                                     name="passMarks"
                                     onChange={handleInputChange}
-                                    className="form-control form-control-dark"
+                                    className="form-control form-control-dark font-monospace text-warning border-warning border-opacity-25"
                                     defaultValue={40}
                                     required
                                 />
+                            </div>
+
+                            {/* Camera Configuration */}
+                            <div className="card bg-dark bg-opacity-25 border-0 rounded-3 mt-4 overflow-hidden shadow-inner">
+                                <div className="card-body p-3 d-flex align-items-center justify-content-between">
+                                    <div className="d-flex align-items-center gap-3">
+                                        <div className={`p-2 rounded-3 ${examData.cameraMonitoring ? 'bg-info' : 'bg-secondary'} bg-opacity-25`}>
+                                            <CloudLightning size={20} className={examData.cameraMonitoring ? 'text-white' : 'text-secondary'} />
+                                        </div>
+                                        <div>
+                                            <div className="text-white small fw-bold">Camera Monitoring</div>
+                                            <div className="text-white-50 tiny text-uppercase tracking-wider" style={{ fontSize: '0.65rem' }}>AI Face & Phone Detection</div>
+                                        </div>
+                                    </div>
+                                    <div className="form-check form-switch m-0 p-0 d-flex align-items-center">
+                                        <input
+                                            className="form-check-input ms-0 shadow-none cursor-pointer"
+                                            type="checkbox"
+                                            role="switch"
+                                            checked={examData.cameraMonitoring}
+                                            onChange={(e) => setExamData({ ...examData, cameraMonitoring: e.target.checked })}
+                                            style={{ width: '2.5em', height: '1.25em' }}
+                                        />
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -402,7 +428,7 @@ const CreateExam = () => {
                                                         <button
                                                             onClick={() => generateTestCases(i)}
                                                             disabled={generating === i}
-                                                            className="btn btn-sm btn-outline-info d-flex align-items-center gap-2 btn-hover-scale border-opacity-25 text-info px-3"
+                                                            className="btn btn-sm btn-outline-info d-flex align-items-center gap-2 btn-hover-scale px-3"
                                                         >
                                                             {generating === i ? <span className="spinner-border spinner-border-sm" /> : <><Wand2 size={14} /> AI Generate</>}
                                                         </button>

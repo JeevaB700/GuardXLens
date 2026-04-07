@@ -1,22 +1,43 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
-import { ShieldCheck, User, Building, ArrowRight, Loader2, Lock, CheckCircle } from 'lucide-react';
+import { User, Building, ArrowRight, Lock, Mail, Eye, EyeOff, ShieldCheck, Zap, CheckCircle, AlertCircle, Info } from 'lucide-react';
 import API_BASE_URL from '../config';
+
+const InputField = ({ label, icon: Icon, type = 'text', name, placeholder, onChange, required = true, children }) => (
+    <div className="mb-3">
+        <label style={{ fontSize: '0.72rem', fontWeight: 700, color: 'rgba(255,255,255,0.4)', marginBottom: '7px', letterSpacing: '0.08em', textTransform: 'uppercase', display: 'block' }}>{label}</label>
+        <div style={{ position: 'relative' }}>
+            {Icon && <Icon size={15} style={{ position: 'absolute', left: '13px', top: '50%', transform: 'translateY(-50%)', color: 'rgba(255,255,255,0.22)', pointerEvents: 'none', zIndex: 1 }} />}
+            {children || (
+                <input
+                    type={type} name={name} placeholder={placeholder} onChange={onChange} required={required}
+                    style={{
+                        width: '100%', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.09)',
+                        borderRadius: '11px', padding: `11px 13px 11px ${Icon ? '38px' : '13px'}`, color: '#f1f5f9', fontSize: '0.875rem',
+                        outline: 'none', transition: 'all 0.3s ease',
+                    }}
+                    onFocus={e => { e.target.style.borderColor = 'rgba(132,204,22,0.45)'; e.target.style.boxShadow = '0 0 0 3px rgba(132,204,22,0.08)'; e.target.style.background = 'rgba(255,255,255,0.06)'; }}
+                    onBlur={e => { e.target.style.borderColor = 'rgba(255,255,255,0.09)'; e.target.style.boxShadow = 'none'; e.target.style.background = 'rgba(255,255,255,0.04)'; }}
+                />
+            )}
+        </div>
+    </div>
+);
 
 const Register = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const [role, setRole] = useState(location.state?.role || 'student');
-    const [formData, setFormData] = useState({
-        name: '', email: '', password: '',
-        institutionId: '', institutionName: '', adminName: ''
-    });
-
+    const [formData, setFormData] = useState({ name: '', email: '', password: '', institutionId: '', institutionName: '', adminName: '' });
     const [institutions, setInstitutions] = useState([]);
     const [loading, setLoading] = useState(false);
+    const [showPw, setShowPw] = useState(false);
+    const [error, setError] = useState('');
+    const [success, setSuccess] = useState('');
 
     useEffect(() => {
+        document.title = 'GuardXLens | Create Account';
         if (role === 'student') {
             axios.get(`${API_BASE_URL}/api/auth/institutions`)
                 .then(res => setInstitutions(res.data.institutions))
@@ -24,204 +45,216 @@ const Register = () => {
         }
     }, [role]);
 
-    const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
+    const handleChange = (e) => { setFormData({ ...formData, [e.target.name]: e.target.value }); setError(''); };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
+        setError('');
         const endpoint = role === 'student' ? 'register' : 'register-institution';
         try {
             const res = await axios.post(`${API_BASE_URL}/api/auth/${endpoint}`, formData);
             if (res.data.success) {
-                if (res.data.isPending) {
-                    alert(res.data.message);
-                } else {
-                    alert("Registration Successful! Please Login.");
-                }
-                navigate('/login');
+                setSuccess(res.data.isPending ? res.data.message : 'Registration successful! Redirecting to login…');
+                setTimeout(() => navigate('/login'), 2500);
             }
-        } catch (error) {
-            console.error(error);
-            alert("Registration Failed. Please try again.");
-        } finally {
-            setLoading(false);
-        }
+        } catch (err) {
+            setError(err.response?.data?.message || 'Registration failed. Please try again.');
+        } finally { setLoading(false); }
     };
 
+    const featureList = [
+        { icon: ShieldCheck, color: 'var(--gx-neon)', text: 'AI-powered proctoring with face & phone detection' },
+        { icon: Zap, color: '#06b6d4', text: 'Instant exam creation with Gemini AI question generation' },
+        { icon: CheckCircle, color: '#a78bfa', text: 'Real-time malpractice logs with 3-warning system' },
+    ];
+
     return (
-        <div className="min-vh-100 bg-gradient-dark d-flex align-items-center font-sans animate-fade-in">
+        <div className="min-vh-100 animate-fade-in" style={{ background: 'linear-gradient(135deg, #080c18 0%, #0a0f1e 50%, #080c18 100%)', display: 'flex', alignItems: 'center' }}>
+
+            {/* Ambient glows */}
+            <div style={{ position: 'fixed', top: '15%', right: '5%', width: '350px', height: '350px', background: 'radial-gradient(circle, rgba(132,204,22,0.04), transparent 70%)', borderRadius: '50%', pointerEvents: 'none', filter: 'blur(50px)' }} />
+            <div style={{ position: 'fixed', bottom: '10%', left: '5%', width: '300px', height: '300px', background: 'radial-gradient(circle, rgba(139,92,246,0.04), transparent 70%)', borderRadius: '50%', pointerEvents: 'none', filter: 'blur(50px)' }} />
+
             <div className="container py-5">
                 <div className="row justify-content-center align-items-center g-5">
 
-                    {/* Left Side: Brand/Hero */}
-                    <div className="col-lg-6 d-none d-lg-block">
-                        <div className="pe-lg-5">
-                            <div className="animate-slide-up stagger-1 mb-4">
-                                <div className="d-inline-flex align-items-center justify-content-center p-2 rounded logo-cyber-glow shadow-lg">
-                                    <img src="/logo.png" alt="Logo" style={{ width: '64px', height: '64px', objectFit: 'contain' }} />
+                    {/* ===== LEFT PANEL ===== */}
+                    <div className="col-lg-6 d-none d-lg-flex flex-column gap-4">
+                        <div className="animate-slide-up stagger-1">
+                            <div className="d-flex align-items-center gap-3 mb-4">
+                                <div className="logo-cyber-glow p-2 rounded d-flex align-items-center justify-content-center" style={{ width: '54px', height: '54px' }}>
+                                    <img src="/logo.png" alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                                </div>
+                                <div>
+                                    <h2 style={{ fontWeight: 800, color: '#f8fafc', margin: 0, letterSpacing: '-0.02em' }}>GuardXLens</h2>
+                                    <div className="d-flex align-items-center gap-1 mt-1">
+                                        <div className="status-dot status-dot-green"></div>
+                                        <span style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.35)', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase' }}>Secure Platform</span>
+                                    </div>
                                 </div>
                             </div>
-                            <h1 className="display-4 fw-bold mb-3 text-white animate-slide-up stagger-2">Join GuardXLens</h1>
-                            <p className="lead text-white-50 mb-5 animate-slide-up stagger-3">
-                                Advanced Procturing System for Secure & Reliable Online Assessments. Join thousands of students and institutions today.
+                            <h1 style={{ fontSize: '3rem', fontWeight: 900, color: '#f8fafc', letterSpacing: '-0.03em', lineHeight: 1.1, marginBottom: '16px' }}>
+                                Join the <br /><span style={{ color: 'var(--gx-neon)' }}>Future</span> of Exams.
+                            </h1>
+                            <p style={{ color: 'rgba(226,232,240,0.5)', fontSize: '1rem', lineHeight: 1.7, maxWidth: '400px' }}>
+                                AI-powered proctoring, watermark-based mobile blocking, and real-time malpractice detection — all in one platform.
                             </p>
+                        </div>
 
-                            <div className="row g-4">
-                                <div className="col-md-6 animate-slide-up stagger-4">
-                                    <div className="card h-100 border-0 shadow-lg glass-panel hover-shadow-sm">
-                                        <div className="card-body p-4">
-                                            <div className="p-2 bg-success bg-opacity-10 text-success rounded-circle d-inline-block mb-3">
-                                                <Lock size={24} />
-                                            </div>
-                                            <h5 className="fw-bold mb-2 text-white">Secure & Private</h5>
-                                            <p className="small text-white-50 mb-0">End-to-end encryption for all exam data and personal information.</p>
-                                        </div>
+                        {/* Feature list */}
+                        <div className="animate-slide-up stagger-3 d-flex flex-column gap-3">
+                            {featureList.map((f, i) => (
+                                <div key={i} className="d-flex align-items-start gap-3 p-3 rounded-3" style={{
+                                    background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.06)',
+                                    transition: 'all 0.3s ease',
+                                }}>
+                                    <div style={{ width: '32px', height: '32px', borderRadius: '9px', background: `${f.color}15`, border: `1px solid ${f.color}25`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                        <f.icon size={15} style={{ color: f.color }} />
                                     </div>
+                                    <span style={{ fontSize: '0.85rem', color: 'rgba(226,232,240,0.55)', lineHeight: 1.6, paddingTop: '6px' }}>{f.text}</span>
                                 </div>
-                                <div className="col-md-6 animate-slide-up stagger-4" style={{ animationDelay: '0.45s' }}>
-                                    <div className="card h-100 border-0 shadow-lg glass-panel hover-shadow-sm">
-                                        <div className="card-body p-4">
-                                            <div className="p-2 bg-info bg-opacity-10 text-info rounded-circle d-inline-block mb-3">
-                                                <CheckCircle size={24} />
-                                            </div>
-                                            <h5 className="fw-bold mb-2 text-white">Easy Onboarding</h5>
-                                            <p className="small text-white-50 mb-0">Get started in minutes with our intuitive interface and support.</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                            ))}
                         </div>
                     </div>
 
-                    {/* Right Side: Register Form */}
-                    <div className="col-lg-5 animate-slide-up stagger-2">
-                        <div className="card glass-panel shadow-lg border-0">
-                            <div className="card-body p-4 p-md-5">
-                                <div className="text-center mb-4 d-flex flex-column align-items-center">
-                                    {/* Unified Branding Header */}
-                                    <div className="d-flex align-items-center justify-content-center gap-3 mb-3">
-                                        <div className="p-2 rounded-circle logo-cyber-glow shadow d-flex align-items-center justify-content-center" style={{ width: '50px', height: '50px' }}>
-                                            <img src="/logo.png" alt="Logo" style={{ width: '30px', height: '30px', objectFit: 'contain' }} />
+                    {/* ===== RIGHT PANEL: FORM ===== */}
+                    <div className="col-md-10 col-lg-5 animate-slide-up stagger-2">
+                        <div style={{
+                            background: 'rgba(8,12,24,0.88)', backdropFilter: 'blur(30px)',
+                            border: '1px solid rgba(132,204,22,0.13)', borderRadius: '24px',
+                            padding: 'clamp(24px, 4vw, 40px)',
+                            boxShadow: '0 32px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.04), inset 0 1px 0 rgba(255,255,255,0.05)',
+                            position: 'relative', overflow: 'hidden',
+                        }}>
+
+                            {/* Sweep */}
+                            <div style={{ position: 'absolute', top: '-50%', left: '-50%', width: '200%', height: '200%', background: 'linear-gradient(to bottom, transparent, rgba(132,204,22,0.015) 50%, transparent)', transform: 'rotate(25deg)', animation: 'holoSweep 10s linear infinite', pointerEvents: 'none' }} />
+
+                            {/* Header */}
+                            <div className="text-center mb-4" style={{ position: 'relative' }}>
+                                <div className="d-flex align-items-center justify-content-center gap-2 mb-3">
+                                    <div className="logo-cyber-glow d-flex align-items-center justify-content-center" style={{ width: '40px', height: '40px', borderRadius: '10px', padding: '7px' }}>
+                                        <img src="/logo.png" alt="" style={{ width: '100%', objectFit: 'contain' }} />
+                                    </div>
+                                    <span style={{ fontWeight: 800, color: '#f8fafc', fontSize: '1.1rem' }}>GuardXLens</span>
+                                </div>
+                                <h2 style={{ fontWeight: 800, color: '#f8fafc', marginBottom: '4px', letterSpacing: '-0.02em' }}>Create Account</h2>
+                                <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '0.82rem' }}>Register as a student or institution</p>
+                            </div>
+
+                            {/* Role Toggle */}
+                            <div className="mb-4 p-1 rounded-3" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', display: 'flex', gap: '4px' }}>
+                                {[
+                                    { key: 'student', icon: User, label: 'Student' },
+                                    { key: 'institution', icon: Building, label: 'Institution' },
+                                ].map(r => (
+                                    <button
+                                        key={r.key} type="button"
+                                        onClick={() => { setRole(r.key); setError(''); }}
+                                        style={{
+                                            flex: 1, border: 'none', borderRadius: '9px', padding: '10px',
+                                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '7px',
+                                            fontWeight: 600, fontSize: '0.85rem', cursor: 'pointer', transition: 'all 0.3s ease',
+                                            background: role === r.key ? 'linear-gradient(135deg, var(--gx-neon), #a3e635)' : 'transparent',
+                                            color: role === r.key ? '#050a00' : 'rgba(255,255,255,0.4)',
+                                            boxShadow: role === r.key ? '0 4px 14px rgba(132,204,22,0.3)' : 'none',
+                                        }}
+                                    >
+                                        <r.icon size={15} /> {r.label}
+                                    </button>
+                                ))}
+                            </div>
+
+                            {/* Alerts */}
+                            {error && (
+                                <div className="animate-slide-down mb-3 d-flex align-items-start gap-2 p-3 rounded-3" style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', color: '#fca5a5', fontSize: '0.82rem' }}>
+                                    <AlertCircle size={14} style={{ flexShrink: 0, marginTop: '2px' }} /> {error}
+                                </div>
+                            )}
+                            {success && (
+                                <div className="animate-slide-down mb-3 d-flex align-items-start gap-2 p-3 rounded-3" style={{ background: 'rgba(132,204,22,0.08)', border: '1px solid rgba(132,204,22,0.25)', color: 'var(--gx-neon)', fontSize: '0.82rem' }}>
+                                    <CheckCircle size={14} style={{ flexShrink: 0, marginTop: '2px' }} /> {success}
+                                </div>
+                            )}
+
+                            <form onSubmit={handleSubmit}>
+                                {role === 'student' ? (
+                                    <>
+                                        <InputField label="Full Name" icon={User} name="name" placeholder="Your full name" onChange={handleChange} />
+                                        <div className="mb-3">
+                                            <label style={{ fontSize: '0.72rem', fontWeight: 700, color: 'rgba(255,255,255,0.4)', marginBottom: '7px', letterSpacing: '0.08em', textTransform: 'uppercase', display: 'block' }}>Institution</label>
+                                            <select
+                                                name="institutionId" onChange={handleChange} required
+                                                style={{
+                                                    width: '100%', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.09)',
+                                                    borderRadius: '11px', padding: '11px 13px', color: '#f1f5f9', fontSize: '0.875rem', outline: 'none', transition: 'all 0.3s ease',
+                                                }}
+                                                onFocus={e => { e.target.style.borderColor = 'rgba(132,204,22,0.45)'; e.target.style.boxShadow = '0 0 0 3px rgba(132,204,22,0.08)'; }}
+                                                onBlur={e => { e.target.style.borderColor = 'rgba(255,255,255,0.09)'; e.target.style.boxShadow = 'none'; }}
+                                            >
+                                                <option value="" style={{ background: '#0a0f1e' }}>— Select your institution —</option>
+                                                {institutions.map(i => <option key={i._id} value={i._id} style={{ background: '#0a0f1e' }}>{i.name}</option>)}
+                                            </select>
                                         </div>
-                                        <h2 className="fw-bold text-white mb-0" style={{ letterSpacing: '0.5px' }}>GuardXLens</h2>
+                                    </>
+                                ) : (
+                                    <>
+                                        <InputField label="Institution Name" icon={Building} name="institutionName" placeholder="Your college or organization" onChange={handleChange} />
+                                        <InputField label="Admin / Contact Name" icon={User} name="adminName" placeholder="Primary contact name" onChange={handleChange} />
+                                        <div className="mb-3 p-3 rounded-3 d-flex align-items-start gap-2" style={{ background: 'rgba(6,182,212,0.06)', border: '1px solid rgba(6,182,212,0.15)' }}>
+                                            <Info size={13} style={{ color: '#06b6d4', flexShrink: 0, marginTop: '2px' }} />
+                                            <p style={{ color: 'rgba(6,182,212,0.8)', fontSize: '0.75rem', margin: 0, lineHeight: 1.6 }}>
+                                                Institution accounts require admin approval via email before activation.
+                                            </p>
+                                        </div>
+                                    </>
+                                )}
+
+                                <InputField label="Email Address" icon={Mail} type="email" name="email" placeholder="name@example.com" onChange={handleChange} />
+
+                                {/* Password with toggle */}
+                                <div className="mb-4">
+                                    <label style={{ fontSize: '0.72rem', fontWeight: 700, color: 'rgba(255,255,255,0.4)', marginBottom: '7px', letterSpacing: '0.08em', textTransform: 'uppercase', display: 'block' }}>Password</label>
+                                    <div style={{ position: 'relative' }}>
+                                        <Lock size={15} style={{ position: 'absolute', left: '13px', top: '50%', transform: 'translateY(-50%)', color: 'rgba(255,255,255,0.22)', pointerEvents: 'none' }} />
+                                        <input
+                                            type={showPw ? 'text' : 'password'} name="password" placeholder="Create a strong password" onChange={handleChange} required
+                                            style={{
+                                                width: '100%', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.09)',
+                                                borderRadius: '11px', padding: '11px 40px 11px 38px', color: '#f1f5f9', fontSize: '0.875rem',
+                                                outline: 'none', transition: 'all 0.3s ease',
+                                            }}
+                                            onFocus={e => { e.target.style.borderColor = 'rgba(132,204,22,0.45)'; e.target.style.boxShadow = '0 0 0 3px rgba(132,204,22,0.08)'; e.target.style.background = 'rgba(255,255,255,0.06)'; }}
+                                            onBlur={e => { e.target.style.borderColor = 'rgba(255,255,255,0.09)'; e.target.style.boxShadow = 'none'; e.target.style.background = 'rgba(255,255,255,0.04)'; }}
+                                        />
+                                        <button type="button" onClick={() => setShowPw(!showPw)} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'rgba(255,255,255,0.25)', cursor: 'pointer', padding: '4px', transition: 'color 0.2s' }}
+                                            onMouseEnter={e => e.currentTarget.style.color = 'rgba(255,255,255,0.6)'}
+                                            onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.25)'}
+                                        >
+                                            {showPw ? <EyeOff size={15} /> : <Eye size={15} />}
+                                        </button>
                                     </div>
-                                    <h3 className="fw-bold mb-1 text-white">Create Account</h3>
-                                    <p className="text-white-50 small">Sign up for a new account</p>
                                 </div>
 
-                                {/* Role Toggle */}
-                                <div className="d-flex bg-white bg-opacity-5 rounded p-1 mb-4 border border-white border-opacity-10">
-                                    <button
-                                        type="button"
-                                        onClick={() => setRole('student')}
-                                        className={`btn w-50 border-0 rounded py-2 d-flex align-items-center justify-content-center gap-2 transition-all ${role === 'student' ? 'bg-primary text-white shadow-sm fw-bold' : 'bg-transparent text-primary hover-bg-light-10'}`}
-                                    >
-                                        <User size={18} /> Student
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => setRole('institution')}
-                                        className={`btn w-50 border-0 rounded py-2 d-flex align-items-center justify-content-center gap-2 transition-all ${role === 'institution' ? 'bg-primary text-white shadow-sm fw-bold' : 'bg-transparent text-primary hover-bg-light-10'}`}
-                                    >
-                                        <Building size={18} /> Institution
-                                    </button>
-                                </div>
-
-                                <form onSubmit={handleSubmit}>
-                                    {role === 'student' ? (
-                                        <>
-                                            <div className="form-floating mb-3">
-                                                <input
-                                                    type="text"
-                                                    className="form-control form-control-dark"
-                                                    id="name"
-                                                    name="name"
-                                                    placeholder="Full Name"
-                                                    onChange={handleChange}
-                                                    required
-                                                />
-                                                <label htmlFor="name" className="text-white-50">Full Name</label>
-                                            </div>
-                                            <div className="form-floating mb-3">
-                                                <select
-                                                    className="form-select form-control-dark"
-                                                    id="institutionId"
-                                                    name="institutionId"
-                                                    onChange={handleChange}
-                                                    required
-                                                >
-                                                    <option value="" className="bg-dark">Select Institution</option>
-                                                    {institutions.map(i => <option key={i._id} value={i._id} className="bg-dark">{i.name}</option>)}
-                                                </select>
-                                                <label htmlFor="institutionId" className="text-white-50">Institution</label>
-                                            </div>
-                                        </>
+                                <button
+                                    type="submit" disabled={loading || !!success}
+                                    className="btn btn-primary w-100 fw-bold d-flex justify-content-center align-items-center gap-2"
+                                    style={{ borderRadius: '12px', padding: '13px', fontSize: '0.92rem', letterSpacing: '0.02em', boxShadow: '0 8px 30px rgba(132,204,22,0.3)' }}
+                                >
+                                    {loading ? (
+                                        <><div className="spinner-border spinner-border-sm" role="status" style={{ width: '15px', height: '15px', borderWidth: '2px', borderColor: 'rgba(0,0,0,0.2)', borderTopColor: '#000' }}></div> Creating Account…</>
                                     ) : (
-                                        <>
-                                            <div className="form-floating mb-3">
-                                                <input
-                                                    type="text"
-                                                    className="form-control form-control-dark"
-                                                    id="institutionName"
-                                                    name="institutionName"
-                                                    placeholder="Institution Name"
-                                                    onChange={handleChange}
-                                                    required
-                                                />
-                                                <label htmlFor="institutionName" className="text-white-50">Institution Name</label>
-                                            </div>
-                                            <div className="form-floating mb-3">
-                                                <input
-                                                    type="text"
-                                                    className="form-control form-control-dark"
-                                                    id="adminName"
-                                                    name="adminName"
-                                                    placeholder="Admin Name"
-                                                    onChange={handleChange}
-                                                    required
-                                                />
-                                                <label htmlFor="adminName" className="text-white-50">Admin Name</label>
-                                            </div>
-                                        </>
+                                        <>Create Account <ArrowRight size={17} /></>
                                     )}
+                                </button>
+                            </form>
 
-                                    <div className="form-floating mb-3">
-                                        <input
-                                            type="email"
-                                            className="form-control form-control-dark"
-                                            id="email"
-                                            name="email"
-                                            placeholder="name@example.com"
-                                            onChange={handleChange}
-                                            required
-                                        />
-                                        <label htmlFor="email" className="text-white-50">Email Address</label>
-                                    </div>
-                                    <div className="form-floating mb-4">
-                                        <input
-                                            type="password"
-                                            className="form-control form-control-dark"
-                                            id="password"
-                                            name="password"
-                                            placeholder="Password"
-                                            onChange={handleChange}
-                                            required
-                                        />
-                                        <label htmlFor="password" className="text-white-50">Password</label>
-                                    </div>
-
-                                    <button disabled={loading} className="btn btn-primary btn-pulse-neon w-100 py-3 fw-bold rounded d-flex justify-content-center align-items-center gap-2 border-0 shadow-lg">
-                                        {loading ? <Loader2 className="spinner-border spinner-border-sm" /> : (
-                                            <>Register <ArrowRight size={20} /></>
-                                        )}
-                                    </button>
-                                </form>
-
-                                <div className="text-center mt-4">
-                                    <p className="text-white-50 small mb-0">
-                                        Already have an account? <Link to="/login" className="text-primary text-decoration-none fw-bold">Sign in</Link>
-                                    </p>
-                                </div>
+                            <div className="text-center mt-4" style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '20px' }}>
+                                <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '0.82rem', margin: 0 }}>
+                                    Already have an account?{' '}
+                                    <Link to="/login" style={{ color: 'var(--gx-neon)', textDecoration: 'none', fontWeight: 700 }}>Sign In</Link>
+                                </p>
                             </div>
                         </div>
                     </div>

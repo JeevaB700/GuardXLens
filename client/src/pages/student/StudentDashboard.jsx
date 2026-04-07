@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
-import { Play, Clock, CheckCircle, AlertTriangle, FileText, History, LogOut, TrendingUp, Award, Calendar } from 'lucide-react';
+import { Play, Clock, CheckCircle, AlertTriangle, FileText, History, LogOut, TrendingUp, Award, Calendar, BookOpen, Zap, Shield } from 'lucide-react';
 import API_BASE_URL from '../../config';
 
 const StudentDashboard = () => {
@@ -30,12 +30,8 @@ const StudentDashboard = () => {
                     axios.get(`${API_BASE_URL}/api/student/exams`, config),
                     axios.get(`${API_BASE_URL}/api/student/results/${parsedUser.id}`, config)
                 ]);
-
-                // Sort exams by _id (descending) or createdAt if available
                 const sortedExams = (examRes.data.exams || []).sort((a, b) => b._id.localeCompare(a._id));
-                // Sort results by submittedAt (descending)
                 const sortedResults = (resRes.data.results || []).sort((a, b) => new Date(b.submittedAt) - new Date(a.submittedAt));
-
                 setExams(sortedExams);
                 setResults(sortedResults);
             } catch (e) { console.error(e); } finally { setLoading(false); }
@@ -43,159 +39,235 @@ const StudentDashboard = () => {
         fetchData();
     }, [navigate]);
 
-    // Derived Stats
     const totalTaken = results.length;
     const avgScore = totalTaken > 0
         ? Math.round(results.reduce((acc, curr) => acc + (curr.score / curr.totalMarks) * 100, 0) / totalTaken)
         : 0;
-    const pendingExams = exams.length;
+    const pendingExams = exams.filter(e => !e.hasAttempted && new Date() >= new Date(e.startTime) && new Date() <= new Date(e.endTime)).length;
 
     if (loading || !user) {
         return (
-            <div className="vh-100 d-flex align-items-center justify-content-center bg-gradient-dark">
-                <div className="spinner-border text-primary" role="status"><span className="visually-hidden">Loading...</span></div>
+            <div className="d-flex align-items-center justify-content-center" style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #080c18, #0a0f1e)' }}>
+                <div className="d-flex flex-column align-items-center gap-3">
+                    <div className="spinner-neon"></div>
+                    <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: '0.75rem', letterSpacing: '0.12em', textTransform: 'uppercase' }}>Loading</span>
+                </div>
             </div>
         );
     }
 
-    return (
-        <div className="min-vh-100 bg-gradient-dark font-sans d-flex flex-column text-light animate-fade-in" data-bs-theme="dark">
+    const now = new Date();
+    const hour = now.getHours();
+    const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
 
-            {/* NAVBAR */}
-            <nav className="navbar navbar-expand-lg navbar-dark glass-navbar px-4 py-3 sticky-top">
-                <div className="container-fluid d-flex align-items-center justify-content-between flex-nowrap">
-                    <span className="navbar-brand fw-bold d-flex align-items-center gap-2 mb-0">
-                        <div className="logo-cyber-glow rounded p-1 d-flex align-items-center justify-content-center shadow-lg" style={{ width: '32px', height: '32px' }}>
+    const statCards = [
+        { icon: Zap, label: 'Available Now', value: pendingExams, accent: '#84cc16', desc: 'Ready to take' },
+        { icon: TrendingUp, label: 'Avg. Score', value: `${avgScore}%`, accent: '#06b6d4', desc: 'Overall performance' },
+        { icon: BookOpen, label: 'Completed', value: totalTaken, accent: '#a78bfa', desc: 'Exams attended' },
+    ];
+
+    return (
+        <div className="min-vh-100 animate-fade-in" style={{ background: 'linear-gradient(135deg, #080c18 0%, #0a0f1e 100%)' }} data-bs-theme="dark">
+
+            {/* ======= NAVBAR ======= */}
+            <nav style={{
+                background: 'rgba(6,10,20,0.92)',
+                backdropFilter: 'blur(20px)',
+                borderBottom: '1px solid rgba(132,204,22,0.12)',
+                padding: '14px 24px',
+                position: 'sticky',
+                top: 0,
+                zIndex: 100,
+                boxShadow: '0 4px 30px rgba(0,0,0,0.5)',
+            }}>
+                <div style={{ maxWidth: '1300px', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
+                    <div className="d-flex align-items-center gap-2">
+                        <div className="logo-cyber-glow rounded d-flex align-items-center justify-content-center" style={{ width: '36px', height: '36px', padding: '4px' }}>
                             <img src="/logo.png" alt="GX" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
                         </div>
-                        <span className="fs-5">GuardXLens</span>
-                    </span>
+                        <span style={{ fontWeight: 700, color: '#f8fafc', fontSize: '1rem' }}>GuardXLens</span>
+                        <span className="d-none d-md-inline" style={{ fontSize: '0.65rem', background: 'rgba(132,204,22,0.1)', color: 'var(--gx-neon)', border: '1px solid rgba(132,204,22,0.2)', padding: '2px 8px', borderRadius: '100px', fontWeight: 700, letterSpacing: '0.08em' }}>STUDENT</span>
+                    </div>
 
-                    <div className="d-flex align-items-center gap-2 gap-md-4">
-                        <div className="d-none d-md-flex flex-column text-end">
-                            <span className="text-white fw-medium small">{user.name}</span>
-                            <span className="text-white-50 small" style={{ fontSize: '0.75rem' }}>{user.email}</span>
+                    <div className="d-flex align-items-center gap-2 gap-md-3">
+                        <div className="d-none d-md-flex flex-column align-items-end">
+                            <span style={{ color: '#f1f5f9', fontWeight: 600, fontSize: '0.85rem' }}>{user.name}</span>
+                            <span style={{ color: 'rgba(255,255,255,0.35)', fontSize: '0.72rem' }}>{user.email}</span>
                         </div>
-                        <div className="vr text-secondary d-none d-md-block opacity-50"></div>
-                        <button onClick={() => navigate('/student/results')} className="btn btn-outline-light btn-sm d-flex align-items-center gap-2 border-opacity-25 py-1 px-2 px-md-3">
-                            <Award size={14} className="d-none d-sm-block" /> <span style={{ fontSize: '0.8rem' }}>Results</span>
+                        <div style={{ width: '1px', height: '32px', background: 'rgba(255,255,255,0.08)' }} className="d-none d-md-block" />
+                        <button
+                            onClick={() => navigate('/student/results')}
+                            className="btn btn-sm d-flex align-items-center gap-2"
+                            style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', color: '#e2e8f0', borderRadius: '9px', fontSize: '0.8rem', fontWeight: 500 }}
+                        >
+                            <Award size={14} /> Results
                         </button>
-                        <button onClick={() => { sessionStorage.clear(); navigate('/login'); }} className="btn btn-link text-white-50 p-1 hover-text-danger" title="Logout">
-                            <LogOut size={18} />
+                        <button
+                            onClick={() => { sessionStorage.clear(); navigate('/login'); }}
+                            style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', color: '#fca5a5', borderRadius: '9px', padding: '6px 10px', cursor: 'pointer', transition: 'all 0.2s ease', display: 'flex', alignItems: 'center' }}
+                            title="Logout"
+                            onMouseEnter={e => e.currentTarget.style.background = 'rgba(239,68,68,0.18)'}
+                            onMouseLeave={e => e.currentTarget.style.background = 'rgba(239,68,68,0.08)'}
+                        >
+                            <LogOut size={16} />
                         </button>
                     </div>
                 </div>
             </nav>
 
-            <div className="container py-5 flex-grow-1">
+            <div style={{ maxWidth: '1300px', margin: '0 auto', padding: '28px 20px' }}>
 
-                {/* HERO STATS */}
-                <div className="row g-4 mb-5">
-                    <div className="col-md-4 animate-slide-up stagger-1">
-                        <div className="card border-0 shadow-lg bg-primary bg-gradient text-white h-100 overflow-hidden position-relative hover-lift">
-                            <div className="card-body p-4 position-relative z-1">
-                                <h3 className="h6 text-uppercase text-white-50 fw-bold mb-1">Available Exams</h3>
-                                <div className="display-4 fw-bold text-white">{pendingExams}</div>
-                                <p className="mb-0 mt-2 small text-white-50">Ready to take</p>
-                            </div>
-                            <FileText size={120} className="position-absolute bottom-0 end-0 text-white opacity-10 mb-n4 me-n4" />
-                        </div>
+                {/* ======= HEADER ======= */}
+                <div className="animate-slide-down mb-5">
+                    <div className="d-flex align-items-center gap-2 mb-2">
+                        <div className="status-dot status-dot-green"></div>
+                        <span style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.3)', fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase' }}>Student Dashboard</span>
                     </div>
-                    <div className="col-md-4 animate-slide-up stagger-2">
-                        <div className="card border-0 shadow-lg glass-panel h-100 hover-lift">
-                            <div className="card-body p-4 d-flex flex-column justify-content-center">
-                                <div className="d-flex align-items-center gap-3 mb-2">
-                                    <div className="p-3 rounded bg-success-subtle text-success border border-success-subtle bg-opacity-10"><TrendingUp size={24} /></div>
-                                    <div>
-                                        <h3 className="h6 text-uppercase text-white-50 fw-bold mb-0">Average Score</h3>
-                                        <div className="h2 fw-bold mb-0 text-white">{avgScore}%</div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div className="col-md-4 animate-slide-up stagger-3">
-                        <div className="card border-0 shadow-lg glass-panel h-100 hover-lift">
-                            <div className="card-body p-4 d-flex flex-column justify-content-center">
-                                <div className="d-flex align-items-center gap-3 mb-2">
-                                    <div className="p-3 rounded bg-info-subtle text-info border border-info-subtle bg-opacity-10"><History size={24} /></div>
-                                    <div>
-                                        <h3 className="h6 text-uppercase text-white-50 fw-bold mb-0">Completed</h3>
-                                        <div className="h2 fw-bold mb-0 text-white">{totalTaken}</div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                    <h1 style={{ fontSize: 'clamp(1.6rem, 3vw, 2.2rem)', fontWeight: 800, color: '#f8fafc', margin: 0, letterSpacing: '-0.02em' }}>
+                        {greeting}, <span style={{ color: 'var(--gx-neon)' }}>{user.name?.split(' ')[0]}</span> 👋
+                    </h1>
                 </div>
 
-                <div className="row g-5">
+                {/* ======= STATS ROW ======= */}
+                <div className="row g-4 mb-5">
+                    {statCards.map((s, i) => (
+                        <div key={s.label} className={`col-md-4 animate-slide-up stagger-${i + 1}`}>
+                            <div className="h-100" style={{
+                                background: 'rgba(10,15,30,0.7)',
+                                backdropFilter: 'blur(16px)',
+                                border: `1px solid ${s.accent}22`,
+                                borderRadius: '16px',
+                                padding: '24px',
+                                transition: 'all 0.3s ease',
+                            }}>
+                                <div className="d-flex align-items-center gap-3 mb-3">
+                                    <div style={{
+                                        width: '44px', height: '44px', borderRadius: '12px',
+                                        background: `${s.accent}15`, border: `1px solid ${s.accent}25`,
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                        color: s.accent,
+                                    }}>
+                                        <s.icon size={20} />
+                                    </div>
+                                    <div style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.35)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em' }}>{s.label}</div>
+                                </div>
+                                <div style={{ fontSize: '2.8rem', fontWeight: 900, color: '#f8fafc', lineHeight: 1, fontVariantNumeric: 'tabular-nums', marginBottom: '4px' }}>{s.value}</div>
+                                <div style={{ fontSize: '0.78rem', color: 'rgba(226,232,240,0.4)' }}>{s.desc}</div>
+                            </div>
+                        </div>
+                    ))}
+                </div>
 
-                    {/* LEFT: EXAM GRID */}
+                <div className="row g-4">
+
+                    {/* ======= EXAM GRID ======= */}
                     <div className="col-lg-8">
-                        <div className="d-flex justify-content-between align-items-center mb-4">
-                            <h4 className="fw-bold mb-0 text-white">Assessments</h4>
-                            <span className="badge bg-secondary bg-opacity-25 text-light border border-secondary border-opacity-25">{exams.length} Total</span>
+                        <div className="d-flex align-items-center justify-content-between mb-4">
+                            <div className="d-flex align-items-center gap-2">
+                                <div style={{ width: '3px', height: '18px', background: 'linear-gradient(to bottom, var(--gx-neon), transparent)', borderRadius: '2px' }} />
+                                <h2 style={{ fontSize: '1.05rem', fontWeight: 700, color: '#f1f5f9', margin: 0 }}>Your Assessments</h2>
+                            </div>
+                            <span style={{ fontSize: '0.7rem', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.4)', padding: '3px 10px', borderRadius: '100px', fontWeight: 600 }}>
+                                {exams.length} total
+                            </span>
                         </div>
 
                         {exams.length === 0 ? (
-                            <div className="text-center py-5 rounded border border-secondary border-dashed glass-panel">
-                                <div className="mb-3 text-secondary opacity-50"><Calendar size={48} /></div>
-                                <h5 className="text-secondary">No exams scheduled</h5>
-                                <p className="small text-muted">Check back later for new assessments.</p>
+                            <div className="d-flex flex-column align-items-center justify-content-center py-5 text-center" style={{
+                                background: 'rgba(10,15,30,0.5)', border: '1px dashed rgba(255,255,255,0.08)', borderRadius: '16px', minHeight: '200px'
+                            }}>
+                                <Calendar size={40} style={{ color: 'rgba(255,255,255,0.15)', marginBottom: '12px' }} />
+                                <h5 style={{ color: 'rgba(255,255,255,0.3)', fontWeight: 600 }}>No exams yet</h5>
+                                <p style={{ color: 'rgba(255,255,255,0.18)', fontSize: '0.85rem' }}>Your institution hasn't published any exams.</p>
                             </div>
                         ) : (
                             <div className="row g-3">
                                 {exams.map((exam, index) => {
-                                    const now = new Date();
                                     const start = new Date(exam.startTime);
                                     const end = new Date(exam.endTime);
                                     let statusText = "Ready to start";
                                     let isPlayable = true;
-                                    let btnClass = "btn-primary";
+                                    let statusColor = 'var(--gx-neon)';
+                                    let statusBg = 'rgba(132,204,22,0.1)';
 
                                     if (exam.hasAttempted) {
                                         statusText = "Already Attended";
                                         isPlayable = false;
-                                        btnClass = "btn-outline-success";
+                                        statusColor = '#22c55e';
+                                        statusBg = 'rgba(34,197,94,0.08)';
                                     } else if (now < start) {
-                                        statusText = `Starts: ${start.toLocaleString()}`;
+                                        statusText = `Starts ${start.toLocaleString()}`;
                                         isPlayable = false;
-                                        btnClass = "btn-outline-secondary";
+                                        statusColor = 'rgba(255,255,255,0.3)';
+                                        statusBg = 'rgba(255,255,255,0.03)';
                                     } else if (now > end) {
-                                        statusText = `Expired: ${end.toLocaleString()}`;
+                                        statusText = "Expired";
                                         isPlayable = false;
-                                        btnClass = "btn-outline-danger";
+                                        statusColor = '#ef4444';
+                                        statusBg = 'rgba(239,68,68,0.08)';
                                     } else {
-                                        statusText = `Ends: ${end.toLocaleString()}`;
+                                        statusText = `Ends ${end.toLocaleString()}`;
                                     }
 
                                     return (
                                         <div key={exam._id} className={`col-md-6 animate-slide-up stagger-${(index % 4) + 1}`}>
-                                            <div className="card h-100 border-0 shadow-sm hover-shadow-sm transition-all glass-panel">
-                                                <div className="card-body p-4 d-flex flex-column">
-                                                    <div className="d-flex justify-content-between align-items-start mb-3">
-                                                        <span className="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill bg-opacity-10">{exam.subject || 'General'}</span>
-                                                        <small className="text-muted font-monospace bg-dark bg-opacity-50 px-2 rounded">#{exam._id.slice(-4)}</small>
-                                                    </div>
+                                            <div className="h-100" style={{
+                                                background: 'rgba(10,15,30,0.7)',
+                                                backdropFilter: 'blur(16px)',
+                                                border: isPlayable ? '1px solid rgba(132,204,22,0.15)' : '1px solid rgba(255,255,255,0.06)',
+                                                borderRadius: '14px', padding: '20px',
+                                                display: 'flex', flexDirection: 'column',
+                                                transition: 'all 0.3s ease',
+                                            }}>
+                                                <div className="d-flex justify-content-between align-items-start mb-3">
+                                                    <span style={{
+                                                        fontSize: '0.65rem', fontWeight: 700,
+                                                        background: 'rgba(132,204,22,0.1)',
+                                                        color: 'var(--gx-neon)', border: '1px solid rgba(132,204,22,0.2)',
+                                                        padding: '2px 8px', borderRadius: '100px',
+                                                        textTransform: 'uppercase', letterSpacing: '0.08em',
+                                                    }}>{exam.subject || 'General'}</span>
+                                                    <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.2)', fontFamily: 'JetBrains Mono, monospace' }}>#{exam._id.slice(-4)}</span>
+                                                </div>
 
-                                                    <h5 className="card-title fw-bold text-white mb-1">{exam.title}</h5>
-                                                    <p className="card-text text-white-50 small mb-1">
-                                                        Duration: {exam.duration} mins • Marks: {exam.totalMarks}
-                                                    </p>
-                                                    <p className="card-text text-white-50 small border-bottom border-secondary border-opacity-25 pb-3 mb-3">
-                                                        <Clock size={12} className="me-1"/> {statusText}
-                                                    </p>
+                                                <h5 style={{ color: '#f1f5f9', fontWeight: 700, fontSize: '0.95rem', marginBottom: '8px' }}>{exam.title}</h5>
 
-                                                    <div className="mt-auto pt-2">
-                                                        <button 
-                                                            disabled={!isPlayable}
-                                                            onClick={() => navigate(`/student/take-exam/${exam._id}`)} 
-                                                            className={`btn ${btnClass} w-100 fw-bold d-flex align-items-center justify-content-center gap-2 shadow-lg btn-hover-scale`}
-                                                        >
-                                                            {isPlayable ? 'Start Exam' : 'Not Available'} {isPlayable && <Play size={16} fill="currentColor" />}
-                                                        </button>
-                                                    </div>
+                                                <div className="d-flex gap-3 mb-3" style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.35)' }}>
+                                                    <span><Clock size={11} style={{ marginRight: '4px' }} />{exam.duration} min</span>
+                                                    <span><FileText size={11} style={{ marginRight: '4px' }} />{exam.totalMarks} marks</span>
+                                                </div>
+
+                                                <div className="mb-3 px-2 py-1 d-flex align-items-center gap-2" style={{
+                                                    background: statusBg, borderRadius: '8px',
+                                                    fontSize: '0.72rem', color: statusColor, fontWeight: 500,
+                                                }}>
+                                                    <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: statusColor, flexShrink: 0, animation: isPlayable ? 'pulse 1.5s ease-in-out infinite' : 'none' }} />
+                                                    {statusText}
+                                                </div>
+
+                                                <div style={{ marginTop: 'auto' }}>
+                                                    <button
+                                                        disabled={!isPlayable}
+                                                        onClick={() => navigate(`/student/take-exam/${exam._id}`)}
+                                                        className="btn w-100 fw-semibold d-flex align-items-center justify-content-center gap-2"
+                                                        style={{
+                                                            borderRadius: '10px',
+                                                            fontSize: '0.85rem',
+                                                            background: isPlayable ? 'linear-gradient(135deg, var(--gx-neon), #a3e635)' : 'rgba(255,255,255,0.04)',
+                                                            color: isPlayable ? '#050a00' : 'rgba(255,255,255,0.25)',
+                                                            border: isPlayable ? 'none' : '1px solid rgba(255,255,255,0.07)',
+                                                            boxShadow: isPlayable ? '0 4px 20px rgba(132,204,22,0.3)' : 'none',
+                                                            transition: 'all 0.3s ease',
+                                                        }}
+                                                    >
+                                                        {exam.hasAttempted ? (
+                                                            <><CheckCircle size={15} /> Completed</>
+                                                        ) : isPlayable ? (
+                                                            <><Play size={15} fill="currentColor" /> Start Exam</>
+                                                        ) : (
+                                                            'Not Available'
+                                                        )}
+                                                    </button>
                                                 </div>
                                             </div>
                                         </div>
@@ -205,48 +277,75 @@ const StudentDashboard = () => {
                         )}
                     </div>
 
-                    {/* RIGHT: RECENT HISTORY */}
+                    {/* ======= RECENT ACTIVITY ======= */}
                     <div className="col-lg-4">
-                        <div className="d-flex justify-content-between align-items-center mb-4">
-                            <h4 className="fw-bold mb-0 text-white">Recent Activity</h4>
+                        <div className="d-flex align-items-center gap-2 mb-4">
+                            <div style={{ width: '3px', height: '18px', background: 'linear-gradient(to bottom, var(--gx-cyan), transparent)', borderRadius: '2px' }} />
+                            <h2 style={{ fontSize: '1.05rem', fontWeight: 700, color: '#f1f5f9', margin: 0 }}>Recent Activity</h2>
                         </div>
 
-                        <div className="card border-0 shadow-lg glass-panel animate-slide-up stagger-2">
-                            <div className="list-group list-group-flush bg-transparent">
-                                {results.length === 0 ? (
-                                    <div className="p-5 text-center text-muted">
-                                        <History size={32} className="opacity-25 mb-2" />
-                                        <p className="small m-0">No history available</p>
-                                    </div>
-                                ) : (
-                                    results.slice(0, 5).map((r, i) => (
-                                        <div key={i} className="list-group-item p-3 border-secondary border-opacity-10 bg-transparent text-light">
-                                            <div className="d-flex justify-content-between align-items-center mb-1">
-                                                <span className="fw-bold text-white text-truncate" style={{ maxWidth: '160px' }}>{r.examId?.title || 'Unknown'}</span>
-                                                <span className="text-secondary small" style={{ fontSize: '0.75rem' }}>{new Date(r.submittedAt).toLocaleDateString()}</span>
-                                            </div>
-                                            <div className="d-flex justify-content-between align-items-center">
-                                                <div className="d-flex align-items-center gap-1">
-                                                    {r.isMalpractice ? (
-                                                        <span className="badge bg-danger-subtle text-danger border border-danger-subtle bg-opacity-10 d-flex align-items-center gap-1 px-2 py-1">
-                                                            <AlertTriangle size={10} /> Void
-                                                        </span>
-                                                    ) : (
-                                                        <span className={`badge border bg-opacity-10 ${r.score >= (r.totalMarks * 0.4) ? 'bg-success-subtle text-success border-success-subtle' : 'bg-warning-subtle text-warning border-warning-subtle'}`}>
-                                                            {r.score} / {r.totalMarks}
-                                                        </span>
-                                                    )}
-                                                </div>
-                                                <button onClick={() => navigate('/student/results')} className="btn btn-link btn-sm p-0 text-secondary text-decoration-none small hover-text-white">View</button>
-                                            </div>
-                                        </div>
-                                    ))
-                                )}
-                            </div>
-                            {results.length > 5 && (
-                                <div className="card-footer bg-transparent border-top border-secondary border-opacity-10 text-center p-2">
-                                    <button onClick={() => navigate('/student/results')} className="btn btn-link btn-sm text-decoration-none text-white-50 hover-text-white">View All History</button>
+                        <div style={{
+                            background: 'rgba(10,15,30,0.7)',
+                            backdropFilter: 'blur(16px)',
+                            border: '1px solid rgba(255,255,255,0.07)',
+                            borderRadius: '16px', overflow: 'hidden',
+                        }} className="animate-slide-up stagger-2">
+                            {results.length === 0 ? (
+                                <div className="d-flex flex-column align-items-center justify-content-center p-5 text-center">
+                                    <History size={32} style={{ color: 'rgba(255,255,255,0.12)', marginBottom: '10px' }} />
+                                    <p style={{ color: 'rgba(255,255,255,0.2)', fontSize: '0.82rem', margin: 0 }}>No history yet</p>
                                 </div>
+                            ) : (
+                                <>
+                                    {results.slice(0, 5).map((r, i) => {
+                                        const pct = Math.round((r.score / r.totalMarks) * 100);
+                                        const passed = pct >= 40;
+                                        return (
+                                            <div key={i} style={{
+                                                padding: '14px 18px',
+                                                borderBottom: '1px solid rgba(255,255,255,0.05)',
+                                                transition: 'background 0.2s ease',
+                                            }}
+                                                onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.03)'}
+                                                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                                            >
+                                                <div className="d-flex justify-content-between align-items-start">
+                                                    <span style={{ color: '#e2e8f0', fontWeight: 600, fontSize: '0.82rem', maxWidth: '150px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                                        {r.examId?.title || 'Unknown'}
+                                                    </span>
+                                                    <span style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.25)', flexShrink: 0 }}>
+                                                        {new Date(r.submittedAt).toLocaleDateString()}
+                                                    </span>
+                                                </div>
+
+                                                {r.isMalpractice ? (
+                                                    <div className="d-flex align-items-center gap-1 mt-1">
+                                                        <AlertTriangle size={11} style={{ color: '#ef4444' }} />
+                                                        <span style={{ fontSize: '0.7rem', color: '#ef4444', fontWeight: 600 }}>Terminated — Malpractice</span>
+                                                    </div>
+                                                ) : (
+                                                    <div className="d-flex align-items-center justify-content-between mt-2">
+                                                        <div style={{ flex: 1, height: '4px', background: 'rgba(255,255,255,0.06)', borderRadius: '2px', overflow: 'hidden', marginRight: '10px' }}>
+                                                            <div style={{ height: '100%', width: `${pct}%`, background: passed ? 'linear-gradient(90deg, var(--gx-neon), #a3e635)' : 'linear-gradient(90deg, #f59e0b, #ef4444)', borderRadius: '2px', transition: 'width 1s ease' }} />
+                                                        </div>
+                                                        <span style={{ fontSize: '0.72rem', fontWeight: 700, color: passed ? 'var(--gx-neon)' : '#f59e0b', flexShrink: 0 }}>
+                                                            {r.score}/{r.totalMarks}
+                                                        </span>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        );
+                                    })}
+                                    <div style={{ padding: '12px 18px' }}>
+                                        <button
+                                            onClick={() => navigate('/student/results')}
+                                            className="btn w-100 btn-sm fw-semibold"
+                                            style={{ background: 'rgba(132,204,22,0.08)', border: '1px solid rgba(132,204,22,0.2)', color: 'var(--gx-neon)', borderRadius: '8px', fontSize: '0.8rem' }}
+                                        >
+                                            View All Results
+                                        </button>
+                                    </div>
+                                </>
                             )}
                         </div>
                     </div>
