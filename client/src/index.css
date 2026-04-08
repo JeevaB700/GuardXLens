@@ -677,7 +677,7 @@ body {
   z-index: 9999;
   background-image: url('/watermark.png');
   background-repeat: repeat;
-  background-size: 250px;
+  background-size: 600px;
   opacity: 0.04;
   mix-blend-mode: screen;
 }
@@ -705,7 +705,7 @@ body {
 
 /* ========== MOBILE WATERMARK ========== */
 @media (max-width: 768px) {
-  .security-watermark { background-size: 200px; opacity: 0.08; }
+  .security-watermark { background-size: 300px; opacity: 0.08; }
 }
 
 /* ========== INPUT GROUP ADDON ========== */
@@ -722,6 +722,67 @@ body {
   border: none;
   margin: 1.5rem 0;
 }
+
+/* ========== TOOLTIP LIKE STATUS ========== */
+
+/* ========== RESPONSIVE DESIGN ========== */
+/* Mobile adjustments */
+@media (max-width: 768px) {
+  /* Reduce base font size for better readability */
+  html { font-size: 14px; }
+  body { padding: 0 1rem; }
+
+  /* Navbar becomes vertical and full width */
+  .glass-navbar {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 0.5rem 1rem;
+  }
+
+  /* Sidebar collapses to top bar */
+  .sidebar-nav-item {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.85rem;
+  }
+
+  /* Cards stack vertically */
+  .card, .stat-card, .glass-card-gradient {
+    width: 100% !important;
+    margin-bottom: 1rem;
+  }
+
+  /* Reduce padding and margins on panels */
+  .glass-panel {
+    padding: 1rem;
+  }
+
+  /* Adjust button sizes */
+  .btn-primary, .btn-outline-primary, .btn-outline-danger, .btn-hover-scale {
+    font-size: 0.9rem;
+    padding: 0.4rem 0.8rem;
+  }
+
+  /* Scale down icons */
+  .icon-box { width: 40px; height: 40px; }
+
+  /* Table becomes scrollable */
+  .table-dark-theme { display: block; overflow-x: auto; }
+
+  /* Reduce progress bar height */
+  .progress-neon { height: 6px; }
+}
+
+/* Tablet and small desktop adjustments */
+@media (min-width: 769px) and (max-width: 1024px) {
+  html { font-size: 15px; }
+  .glass-navbar { padding: 0.75rem 1.5rem; }
+  .sidebar-nav-item { font-size: 0.9rem; }
+  .card, .stat-card, .glass-card-gradient { width: calc(50% - 1rem); margin: 0.5rem; }
+  .icon-box { width: 48px; height: 48px; }
+  .progress-neon { height: 8px; }
+}
+
+/* End of responsive design */
 
 /* ========== TOOLTIP LIKE STATUS ========== */
 .status-dot {

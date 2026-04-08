@@ -163,7 +163,12 @@ const CreateExam = () => {
         setLoading(true);
         try {
             const token = sessionStorage.getItem('token');
-            await axios.post(`${API_BASE_URL}/api/admin/save`, examData, {
+            const payload = {
+                ...examData,
+                startTime: new Date(examData.startTime).toISOString(),
+                endTime: new Date(examData.endTime).toISOString()
+            };
+            await axios.post(`${API_BASE_URL}/api/admin/save`, payload, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             navigate('/institution/dashboard');
