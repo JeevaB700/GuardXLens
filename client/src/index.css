@@ -78,6 +78,60 @@ body {
   z-index: 0;
 }
 
+/* ========== PREMIUM ANIMATION UTILITIES ========== */
+
+/* Hover Effects */
+body:not(.exam-page) .hover-glow-neon:hover {
+  box-shadow: 0 0 20px rgba(132, 204, 22, 0.6), 0 0 40px rgba(132, 204, 22, 0.3);
+  transition: var(--gx-transition);
+}
+
+body:not(.exam-page) .hover-scale-up:hover {
+  transform: scale(1.06);
+  transition: var(--gx-transition-fast);
+}
+
+body:not(.exam-page) .hover-rotate:hover {
+  transform: rotate(3deg);
+  transition: var(--gx-transition);
+}
+
+/* Entrance Animations */
+@keyframes slideFadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+body:not(.exam-page) .animate-slide-fade-in {
+  animation: slideFadeIn 0.6s ease-out both;
+}
+
+/* Border Pulse */
+@keyframes pulseBorder {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(132,204,22,0.2); }
+  50% { box-shadow: 0 0 0 6px rgba(132,204,22,0.1); }
+}
+
+body:not(.exam-page) .pulse-border {
+  animation: pulseBorder 2s infinite;
+}
+
+/* Gradient Shift for background particles (already defined) */
+/* Ensure it runs on all containers */
+body:not(.exam-page) .bg-gradient-dark::before {
+  animation: gradientShift 12s linear infinite;
+}
+
+/* Responsive Adjustments for animation utilities */
+@media (max-width: 768px) {
+  body:not(.exam-page) .hover-scale-up:hover { transform: scale(1.04); }
+  body:not(.exam-page) .hover-rotate:hover { transform: rotate(2deg); }
+}
+
+@media (min-width: 769px) and (max-width: 1024px) {
+  body:not(.exam-page) .hover-scale-up:hover { transform: scale(1.05); }
+}
+
 /* ========== GLASSMORPHISM V2 ========== */
 .glass-panel {
   background: rgba(10, 15, 30, 0.65) !important;
