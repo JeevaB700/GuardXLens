@@ -141,7 +141,7 @@ const EditExam = () => {
     try {
       const token = sessionStorage.getItem('token');
       const { title, subject, duration, questions, startTime, endTime, passMarks, cameraMonitoring } = examData;
-      await axios.put(`${API_BASE_URL}/api/admin/update/${id}`,
+      await axios.put(`${API_BASE_URL}/api/admin/exam/${id}`,
         { title, subject, duration, questions, startTime, endTime, passMarks, cameraMonitoring },
         { headers: { Authorization: `Bearer ${token}` } }
       );

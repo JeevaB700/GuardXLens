@@ -315,7 +315,6 @@ const InstitutionStudents = () => {
                                                 <button onClick={e => handleAlertClick(e, student)} style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.25)', borderRadius: '8px', padding: '6px 10px', cursor: 'pointer', color: '#fca5a5', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.72rem', fontWeight: 600, transition: 'all 0.2s ease' }}
                                                     onMouseEnter={e => e.currentTarget.style.background = 'rgba(239,68,68,0.2)'}
                                                     onMouseLeave={e => e.currentTarget.style.background = 'rgba(239,68,68,0.1)'}
-                                                    onClick={e => handleAlertClick(e, student)}
                                                 >
                                                     <ShieldAlert size={13} /> Logs
                                                 </button>
