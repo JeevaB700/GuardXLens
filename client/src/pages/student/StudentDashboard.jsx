@@ -82,34 +82,30 @@ const StudentDashboard = () => {
             }}>
                 <div style={{ maxWidth: '1300px', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
                     <div className="d-flex align-items-center gap-2">
-                        <div className="logo-cyber-glow rounded d-flex align-items-center justify-content-center" style={{ width: '36px', height: '36px', padding: '4px' }}>
+                        <div className="logo-cyber-glow rounded d-flex align-items-center justify-content-center" style={{ width: '32px', height: '32px', padding: '4px' }}>
                             <img src="/logo.png" alt="GX" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
                         </div>
-                        <span style={{ fontWeight: 700, color: '#f8fafc', fontSize: '1rem' }}>GuardXLens</span>
-                        <span className="d-none d-md-inline" style={{ fontSize: '0.65rem', background: 'rgba(132,204,22,0.1)', color: 'var(--gx-neon)', border: '1px solid rgba(132,204,22,0.2)', padding: '2px 8px', borderRadius: '100px', fontWeight: 700, letterSpacing: '0.08em' }}>STUDENT</span>
+                        <span className="glitch-text fw-bold text-white d-none d-sm-inline-block" data-text="GuardXLens" style={{ fontSize: '0.95rem' }}>GuardXLens</span>
                     </div>
 
-                    <div className="d-flex align-items-center gap-2 gap-md-3">
-                        <div className="d-none d-md-flex flex-column align-items-end">
-                            <span style={{ color: '#f1f5f9', fontWeight: 600, fontSize: '0.85rem' }}>{user.name}</span>
-                            <span style={{ color: 'rgba(255,255,255,0.35)', fontSize: '0.72rem' }}>{user.email}</span>
+                    <div className="d-flex align-items-center gap-2">
+                        <div className="d-none d-lg-flex flex-column align-items-end me-2">
+                            <span style={{ color: '#f1f5f9', fontWeight: 600, fontSize: '0.8rem' }}>{user.name}</span>
+                            <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: '0.65rem' }}>{user.email}</span>
                         </div>
-                        <div style={{ width: '1px', height: '32px', background: 'rgba(255,255,255,0.08)' }} className="d-none d-md-block" />
                         <button
                             onClick={() => navigate('/student/results')}
                             className="btn btn-sm d-flex align-items-center gap-2"
-                            style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', color: '#e2e8f0', borderRadius: '9px', fontSize: '0.8rem', fontWeight: 500 }}
+                            style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', color: '#e2e8f0', borderRadius: '8px', fontSize: '0.75rem', padding: '5px 10px' }}
                         >
-                            <Award size={14} /> Results
+                            <Award size={13} /> <span className="d-none d-sm-inline">Results</span>
                         </button>
                         <button
                             onClick={() => { sessionStorage.clear(); navigate('/login'); }}
-                            style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', color: '#fca5a5', borderRadius: '9px', padding: '6px 10px', cursor: 'pointer', transition: 'all 0.2s ease', display: 'flex', alignItems: 'center' }}
+                            style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', color: '#fca5a5', borderRadius: '8px', padding: '5px 8px', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
                             title="Logout"
-                            onMouseEnter={e => e.currentTarget.style.background = 'rgba(239,68,68,0.18)'}
-                            onMouseLeave={e => e.currentTarget.style.background = 'rgba(239,68,68,0.08)'}
                         >
-                            <LogOut size={16} />
+                            <LogOut size={14} />
                         </button>
                     </div>
                 </div>
@@ -129,16 +125,14 @@ const StudentDashboard = () => {
                 </div>
 
                 {/* ======= STATS ROW ======= */}
-                <div className="row g-4 mb-5">
+                <div className="row g-3 g-md-4 mb-5">
                     {statCards.map((s, i) => (
-                        <div key={s.label} className={`col-md-4 animate-slide-up stagger-${i + 1}`}>
-                            <div className="h-100" style={{
-                                background: 'rgba(10,15,30,0.7)',
-                                backdropFilter: 'blur(16px)',
-                                border: `1px solid ${s.accent}22`,
+                        <div key={s.label} className={`col-6 col-md-4 animate-up stagger-${i + 1}`}>
+                            <div className="h-100 hover-lift glass-panel" style={{
                                 borderRadius: '16px',
                                 padding: '24px',
                                 transition: 'all 0.3s ease',
+                                animationDelay: `${i * 0.1}s`
                             }}>
                                 <div className="d-flex align-items-center gap-3 mb-3">
                                     <div style={{
@@ -211,13 +205,11 @@ const StudentDashboard = () => {
 
                                     return (
                                         <div key={exam._id} className={`col-md-6 animate-slide-up stagger-${(index % 4) + 1}`}>
-                                            <div className="h-100" style={{
-                                                background: 'rgba(10,15,30,0.7)',
-                                                backdropFilter: 'blur(16px)',
-                                                border: isPlayable ? '1px solid rgba(132,204,22,0.15)' : '1px solid rgba(255,255,255,0.06)',
+                                            <div className="h-100 hover-lift glass-panel" style={{
                                                 borderRadius: '14px', padding: '20px',
                                                 display: 'flex', flexDirection: 'column',
                                                 transition: 'all 0.3s ease',
+                                                animationDelay: `${(index % 4) * 0.1}s`
                                             }}>
                                                 <div className="d-flex justify-content-between align-items-start mb-3">
                                                     <span style={{

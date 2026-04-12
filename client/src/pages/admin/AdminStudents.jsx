@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import { Building, User, ChevronRight, ArrowLeft, GraduationCap, TrendingUp, CheckCircle, Search, Filter, ShieldAlert, FileText, Clock, AlertTriangle } from 'lucide-react';
+import { Building, User, ChevronRight, ArrowLeft, GraduationCap, TrendingUp, CheckCircle, Search, Filter, ShieldAlert, FileText, Clock, AlertTriangle, Trash2, Plus } from 'lucide-react';
 import API_BASE_URL from '../../config';
 
 const AdminStudents = () => {
@@ -16,6 +16,11 @@ const AdminStudents = () => {
     const [allStudentLogs, setAllStudentLogs] = useState([]);
     const [logStudentName, setLogStudentName] = useState("");
     const [loading, setLoading] = useState(true);
+    const [confirmDelete, setConfirmDelete] = useState(null); // { type: 'student' | 'institution', id: string, name: string }
+    const [isDeleting, setIsDeleting] = useState(false);
+    const [showAddStudentModal, setShowAddStudentModal] = useState(false);
+    const [newStudentData, setNewStudentData] = useState({ name: '', email: '', password: '' });
+    const [isCreating, setIsCreating] = useState(false);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -94,14 +99,59 @@ const AdminStudents = () => {
     };
     const stats = selectedStudent ? calculateStats() : {};
 
+    const handleDelete = async () => {
+        if (!confirmDelete) return;
+        setIsDeleting(true);
+        try {
+            const token = sessionStorage.getItem('token');
+            const endpoint = confirmDelete.type === 'student' ? `/api/admin/student/${confirmDelete.id}` : `/api/admin/institution/${confirmDelete.id}`;
+            const res = await axios.delete(`${API_BASE_URL}${endpoint}`, { headers: { Authorization: `Bearer ${token}` } });
+            if (res.data.success) {
+                // Refresh data
+                if (confirmDelete.type === 'institution') {
+                    setInstitutions(prev => prev.filter(i => i._id !== confirmDelete.id));
+                } else {
+                    setStudents(prev => prev.filter(s => s._id !== confirmDelete.id));
+                }
+                setConfirmDelete(null);
+            }
+        } catch (e) {
+            alert(e.response?.data?.message || 'Delete failed');
+        } finally {
+            setIsDeleting(false);
+        }
+    };
+
+    const handleCreateStudent = async (e) => {
+        e.preventDefault();
+        setIsCreating(true);
+        try {
+            const token = sessionStorage.getItem('token');
+            const res = await axios.post(`${API_BASE_URL}/api/admin/create-student`, {
+                ...newStudentData,
+                institutionId: selectedInst._id
+            }, { headers: { Authorization: `Bearer ${token}` } });
+            
+            if (res.data.success) {
+                setStudents([...students, res.data.student]);
+                setShowAddStudentModal(false);
+                setNewStudentData({ name: '', email: '', password: '' });
+            }
+        } catch (err) {
+            alert(err.response?.data?.message || 'Failed to create student');
+        } finally {
+            setIsCreating(false);
+        }
+    };
+
     if (loading) return <div className="d-flex justify-content-center align-items-center h-100"><div className="spinner-border text-primary" /></div>;
 
     return (
-        <div className="container-fluid p-0 animate-fade-in">
+        <div className="container-fluid p-lg-4 p-3 animate-fade-in">
 
-            {/* SECURITY LOGS MODAL */}
+            {/* SECURITY LOGS MODAL ... */}
             {logModalOpen && (
-                <div className="modal show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(0,0,0,0.7)', zIndex: 1060 }}>
+                <div className="modal show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(0,0,0,0.8)', zIndex: 1060, backdropFilter: 'blur(5px)' }}>
                     <div className="modal-dialog modal-dialog-centered modal-lg">
                         <div className="modal-content glass-panel border border-danger border-opacity-50 shadow-lg">
                             <div className="modal-header bg-danger bg-opacity-10 border-bottom border-danger border-opacity-25">
@@ -130,7 +180,84 @@ const AdminStudents = () => {
                 </div>
             )}
 
-            {/* VIEW 1: INSTITUTIONS LIST */}
+            {/* DELETE CONFIRMATION MODAL */}
+            {confirmDelete && (
+                <div className="modal show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(0,0,0,0.85)', zIndex: 1100, backdropFilter: 'blur(10px)' }}>
+                    <div className="modal-dialog modal-dialog-centered">
+                        <div className="modal-content glass-panel border border-danger border-opacity-30 shadow-2xl animate-scale-up">
+                            <div className="modal-body p-4 text-center">
+                                <div className="p-3 rounded-circle bg-danger bg-opacity-10 text-danger d-inline-flex mb-3">
+                                    <AlertTriangle size={40} />
+                                </div>
+                                <h4 className="text-white fw-bold mb-2">Fair Warning</h4>
+                                <p className="text-secondary mb-4 px-3" style={{ fontSize: '0.9rem' }}>
+                                    Are you sure you want to delete <strong>{confirmDelete.name}</strong>? 
+                                    {confirmDelete.type === 'institution' && (
+                                        <span className="d-block mt-2 text-danger fw-bold">
+                                            CRITICAL: This will permanently purge all students, exams, and results associated with this institution.
+                                        </span>
+                                    )}
+                                    {confirmDelete.type === 'student' && <span className="d-block mt-2">This will remove all their exam history and logs.</span>}
+                                </p>
+                                <div className="d-flex gap-2 justify-content-center">
+                                    <button onClick={() => setConfirmDelete(null)} className="btn btn-dark border border-white border-opacity-10 rounded-3 px-4" disabled={isDeleting}>Cancel</button>
+                                    <button onClick={handleDelete} className="btn btn-danger rounded-3 px-4 d-flex align-items-center gap-2" disabled={isDeleting}>
+                                        {isDeleting ? <span className="spinner-border spinner-border-sm" /> : <><Trash2 size={16} /> Confirm Delete</>}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* ADD STUDENT MODAL */}
+            {showAddStudentModal && (
+                <div className="modal show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(0,0,0,0.8)', zIndex: 1100, backdropFilter: 'blur(10px)' }}>
+                    <div className="modal-dialog modal-dialog-centered">
+                        <div className="modal-content glass-panel border border-white border-opacity-10 shadow-lg animate-scale-up">
+                            <div className="modal-header border-bottom border-white border-opacity-10">
+                                <h5 className="modal-title text-white">Add New Student</h5>
+                                <button type="button" className="btn-close btn-close-white" onClick={() => setShowAddStudentModal(false)}></button>
+                            </div>
+                            <div className="modal-body p-4">
+                                <form onSubmit={handleCreateStudent}>
+                                    <div className="mb-3">
+                                        <label className="text-white-50 small mb-1">Full Name</label>
+                                        <input 
+                                            type="text" required className="form-control form-control-dark"
+                                            value={newStudentData.name}
+                                            onChange={(e) => setNewStudentData({...newStudentData, name: e.target.value})}
+                                        />
+                                    </div>
+                                    <div className="mb-3">
+                                        <label className="text-white-50 small mb-1">Email Address</label>
+                                        <input 
+                                            type="email" required className="form-control form-control-dark"
+                                            value={newStudentData.email}
+                                            onChange={(e) => setNewStudentData({...newStudentData, email: e.target.value})}
+                                        />
+                                    </div>
+                                    <div className="mb-4">
+                                        <label className="text-white-50 small mb-1">Temporary Password</label>
+                                        <input 
+                                            type="text" required className="form-control form-control-dark"
+                                            value={newStudentData.password}
+                                            onChange={(e) => setNewStudentData({...newStudentData, password: e.target.value})}
+                                        />
+                                        <small className="text-white-50 mt-1 d-block" style={{ fontSize: '0.7rem' }}>Student will receive this password via email.</small>
+                                    </div>
+                                    <div className="d-grid">
+                                        <button className="btn btn-primary rounded-3 py-2 fw-bold" disabled={isCreating}>
+                                            {isCreating ? <span className="spinner-border spinner-border-sm" /> : 'Create & Send Email'}
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
             {view === 'institutions' && (
                 <>
                     <div className="d-flex flex-column flex-md-row justify-content-between align-items-center mb-4">
@@ -146,17 +273,27 @@ const AdminStudents = () => {
                     <div className="row g-4">
                         {institutions.map((inst, idx) => (
                             <div key={inst._id} className={`col-md-6 col-lg-4 animate-slide-up stagger-${Math.min(idx + 1, 4)}`}>
-                                <div onClick={() => handleInstClick(inst)} className="card glass-panel h-100 border-0 shadow-lg cursor-pointer hover-shadow-sm transition-all">
-                                    <div className="card-body p-4 d-flex align-items-start gap-4">
-                                        <div className="p-3 bg-primary bg-opacity-10 text-primary rounded-3">
+                                <div onClick={() => handleInstClick(inst)} className="card glass-panel h-100 border-0 shadow-lg cursor-pointer hover-shadow-sm transition-all position-relative overflow-hidden group">
+                                    <div className="card-body p-4 d-flex align-items-start gap-3">
+                                        <div className="p-3 bg-primary bg-opacity-10 text-primary rounded-3 flex-shrink-0">
                                             <Building size={24} />
                                         </div>
-                                        <div className="flex-grow-1">
-                                            <h5 className="fw-bold mb-1 text-white">{inst.name}</h5>
-                                            <p className="text-white-50 small mb-2">{inst.email}</p>
-                                            <span className="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25">Active</span>
+                                        <div className="flex-grow-1 overflow-hidden">
+                                            <h5 className="fw-bold mb-1 text-white text-truncate">{inst.name}</h5>
+                                            <p className="text-white-50 small mb-2 text-truncate">{inst.email}</p>
+                                            <div className="d-flex align-items-center gap-2">
+                                                <span className="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25">Active</span>
+                                                <button 
+                                                    className="btn btn-sm p-1 border-0 bg-transparent text-white-50 btn-hover-danger transition-all"
+                                                    style={{ borderRadius: '8px' }}
+                                                    onClick={(e) => { e.stopPropagation(); setConfirmDelete({ type: 'institution', id: inst._id, name: inst.name }); }}
+                                                    title="Delete Institution"
+                                                >
+                                                    <Trash2 size={16} />
+                                                </button>
+                                            </div>
                                         </div>
-                                        <ChevronRight className="text-white-50" />
+                                        <ChevronRight className="text-white-50 mt-1" />
                                     </div>
                                 </div>
                             </div>
@@ -172,14 +309,20 @@ const AdminStudents = () => {
                         <ArrowLeft size={18} /> Back to Institutions
                     </button>
 
-                    <div className="card glass-panel shadow-lg border-0 mb-4 animate-slide-up">
-                        <div className="card-body p-4 d-flex align-items-center gap-4">
+                    <div className="d-flex flex-column flex-md-row justify-content-between align-items-center mb-4 gap-3">
+                        <div className="d-flex align-items-center gap-4">
                             <div className="p-3 bg-primary rounded-3 text-white"><Building size={32} /></div>
                             <div>
                                 <h2 className="h4 fw-bold mb-0 text-white">{selectedInst.name}</h2>
                                 <p className="text-white-50 mb-0 small">{students.length} Students Enrolled • {selectedInst.email}</p>
                             </div>
                         </div>
+                        <button 
+                            onClick={() => setShowAddStudentModal(true)}
+                            className="btn btn-primary d-flex align-items-center gap-2 rounded-3 px-4 py-2 fw-bold shadow-lg"
+                        >
+                            <Plus size={18} /> Add Student
+                        </button>
                     </div>
 
                     <div className="card glass-panel border-0 shadow-lg animate-slide-up stagger-1">
@@ -219,7 +362,19 @@ const AdminStudents = () => {
                                                     )}
                                                 </div>
                                             </td>
-                                            <td className="text-end pe-4"><ChevronRight size={18} className="text-white-50" /></td>
+                                            <td className="text-end pe-4">
+                                                <div className="d-flex justify-content-end align-items-center gap-2">
+                                                    <button 
+                                                        className="btn btn-sm p-1 border-0 bg-transparent text-white-50 btn-hover-danger transition-all"
+                                                        style={{ borderRadius: '8px' }}
+                                                        onClick={(e) => { e.stopPropagation(); setConfirmDelete({ type: 'student', id: s._id, name: s.name }); }}
+                                                        title="Delete Student"
+                                                    >
+                                                        <Trash2 size={16} />
+                                                    </button>
+                                                    <ChevronRight size={18} className="text-white-50" />
+                                                </div>
+                                            </td>
                                         </tr>
                                     ))}
                                 </tbody>

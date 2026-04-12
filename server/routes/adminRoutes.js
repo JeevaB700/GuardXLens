@@ -3,7 +3,15 @@ const multer = require('multer');
 const { extractQuestions, saveExam, generateTestCases, getAllStudentResults, getExamsByInstitution, updateExam, deleteExam, getResultsByExam } = require('../controllers/examController');
 // 1. IMPORT PROTECT MIDDLEWARE
 const { protect } = require('../middleware/authMiddleware');
-const { getStudentsByInstitutionId } = require('../controllers/authController');
+const { 
+  getStudentsByInstitutionId, 
+  getPendingInstitutions, 
+  approveInstitution, 
+  rejectInstitution, 
+  deleteStudent, 
+  deleteInstitution,
+  adminCreateStudent 
+} = require('../controllers/authController');
 const { getLogs, getMalpracticeStudents, getStudentLogs } = require('../controllers/logController');
 const router = express.Router();
 const storage = multer.memoryStorage();
@@ -32,5 +40,17 @@ router.get('/malpractice-students', protect, getMalpracticeStudents);
 
 // 2. Get specific logs for a student
 router.get('/student-logs/:studentId', protect, getStudentLogs);
+
+// --- INSTITUTION APPROVALS ---
+router.get('/pending-institutions', protect, getPendingInstitutions);
+router.post('/approve-institution', protect, approveInstitution);
+router.post('/reject-institution', protect, rejectInstitution);
+
+// --- DELETIONS ---
+router.delete('/student/:id', protect, deleteStudent);
+router.delete('/institution/:id', protect, deleteInstitution);
+
+// --- MANUAL CREATION ---
+router.post('/create-student', protect, adminCreateStudent);
 
 module.exports = router;

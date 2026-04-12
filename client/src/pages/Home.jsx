@@ -82,14 +82,14 @@ const Home = () => {
             <div className="logo-cyber-glow p-1 rounded d-flex align-items-center justify-content-center" style={{ width: '38px', height: '38px' }}>
               <img src="/logo.png" alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
             </div>
-            <span className="h5 mb-0 fw-bold text-white glitch-text" data-text="GuardXLens">GuardXLens</span>
+            <span className="h5 mb-0 fw-bold text-white glitch-text d-none d-sm-inline-block" data-text="GuardXLens">GuardXLens</span>
             <span className="badge ms-1" style={{ fontSize: '0.55rem', background: 'rgba(132,204,22,0.15)', color: 'var(--gx-neon)', border: '1px solid rgba(132,204,22,0.3)', letterSpacing: '0.1em' }}>v2.0</span>
           </div>
 
           <div className="d-flex gap-2 ms-auto align-items-center">
-            <button onClick={() => navigate('/login')} className="btn btn-link text-white-50 text-decoration-none fw-medium d-none d-md-block hover-text-white" style={{ fontSize: '0.9rem' }}>
-              Login
-            </button>
+            <button onClick={() => navigate('/login')} className="btn btn-link text-white-50 text-decoration-none fw-medium d-none d-lg-block hover-text-white" style={{ fontSize: '0.9rem' }}>
+               Login
+             </button>
             <button onClick={() => navigate('/register')} className="btn btn-primary btn-hover-scale d-flex align-items-center gap-2 px-4 shadow-lg" style={{ borderRadius: '10px', boxShadow: '0 0 20px rgba(132,204,22,0.3)' }}>
               Get Started <ArrowRight size={16} />
             </button>
@@ -108,24 +108,24 @@ const Home = () => {
           <div className="col-lg-9 col-xl-8">
 
             {/* Badge */}
-            <div className="animate-slide-down d-inline-flex align-items-center gap-2 px-3 py-2 rounded-pill mb-5" style={{ background: 'rgba(132,204,22,0.08)', border: '1px solid rgba(132,204,22,0.25)', backdropFilter: 'blur(10px)' }}>
+            <div className="animate-down d-inline-flex align-items-center gap-2 px-3 py-2 rounded-pill mb-4 mb-md-5" style={{ background: 'rgba(132,204,22,0.08)', border: '1px solid rgba(132,204,22,0.25)', backdropFilter: 'blur(10px)' }}>
               <div className="status-dot status-dot-green"></div>
-              <span style={{ color: 'var(--gx-neon)', fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase' }}>
+              <span style={{ color: 'var(--gx-neon)', fontSize: '0.7rem', fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase' }}>
                 AI Proctoring 2.0 — Now Live
               </span>
             </div>
 
             {/* Main Headline */}
-            <h1 className="animate-slide-up fw-black mb-4" style={{ fontSize: 'clamp(2.8rem, 7vw, 5.5rem)', lineHeight: 1.08, letterSpacing: '-0.02em' }}>
-              <span className="d-block" style={{ color: '#f8fafc' }}>Secure Exams.</span>
-              <span className="d-block neon-glow-text" style={{ color: 'var(--gx-neon)' }}>
-                &nbsp;Uncompromised
-              </span>
-              <span className="d-block" style={{ color: '#f8fafc' }}>Integrity.</span>
-            </h1>
+            <h1 className="animate-up fw-black mb-4 hero-title" style={{ fontSize: 'clamp(2.4rem, 8vw, 5.5rem)', lineHeight: 1.05, letterSpacing: '-0.02em', animationDelay: '0.1s' }}>
+               <span className="d-block" style={{ color: '#f8fafc' }}>Secure Exams.</span>
+               <span className="d-block neon-glow-text glitch-text" data-text="&nbsp;Uncompromised" style={{ color: 'var(--gx-neon)' }}>
+                 &nbsp;Uncompromised
+               </span>
+               <span className="d-block" style={{ color: '#f8fafc' }}>Integrity.</span>
+             </h1>
 
             {/* Subtitle */}
-            <p className="animate-slide-up stagger-2 lead mb-5 mx-auto" style={{ color: 'rgba(226,232,240,0.65)', maxWidth: '620px', fontSize: '1.15rem', lineHeight: 1.7, animationDelay: '0.15s' }}>
+            <p className="animate-up lead mb-5 mx-auto" style={{ color: 'rgba(226,232,240,0.65)', maxWidth: '620px', fontSize: '1.15rem', lineHeight: 1.7, animationDelay: '0.2s' }}>
               The world's most advanced AI-powered examination platform.
               Detect malpractice with{' '}
               <span style={{ color: '#f1f5f9', fontWeight: 600 }}>advanced precision</span>{' '}
@@ -133,7 +133,7 @@ const Home = () => {
             </p>
 
             {/* CTA Buttons */}
-            <div className="animate-slide-up stagger-3 d-flex flex-column flex-sm-row gap-3 justify-content-center mb-6" style={{ animationDelay: '0.25s', marginBottom: '3.5rem' }}>
+            <div className="animate-up d-flex flex-column flex-sm-row gap-3 justify-content-center mb-6" style={{ animationDelay: '0.3s', marginBottom: '3.5rem' }}>
               <button
                 onClick={() => navigate('/register', { state: { role: 'institution' } })}
                 className="btn btn-primary btn-lg px-5 py-3 fw-bold d-flex align-items-center justify-content-center gap-2"
@@ -144,12 +144,9 @@ const Home = () => {
               </button>
               <button
                 onClick={() => navigate('/login')}
-                className="btn btn-lg px-5 py-3 fw-bold d-flex align-items-center justify-content-center gap-2"
+                className="btn btn-lg btn-outline-light border-opacity-25 px-5 py-3 fw-bold d-flex align-items-center justify-content-center gap-2"
                 style={{
                   borderRadius: '12px', fontSize: '1rem',
-                  background: 'rgba(255,255,255,0.06)',
-                  border: '1px solid rgba(255,255,255,0.15)',
-                  color: '#f8fafc',
                   backdropFilter: 'blur(10px)',
                   boxShadow: '0 0 20px rgba(255,255,255,0.05)'
                 }}
@@ -159,20 +156,23 @@ const Home = () => {
             </div>
 
             {/* Stats Row */}
-            <div className="animate-slide-up stagger-4 d-flex flex-wrap justify-content-center gap-4 gap-md-5" style={{ animationDelay: '0.35s' }}>
+            {/* Stats Grid */}
+            <div className="animate-up row g-3 g-md-4 justify-content-center mb-5" style={{ animationDelay: '0.4s' }}>
               {stats.map((s) => (
-                <div key={s.label} className="text-center">
-                  <div className="fw-black" style={{ fontSize: '1.8rem', color: 'var(--gx-neon)', lineHeight: 1.1, fontVariantNumeric: 'tabular-nums' }}>{s.value}</div>
-                  <div style={{ fontSize: '0.72rem', color: 'rgba(226,232,240,0.45)', letterSpacing: '0.08em', textTransform: 'uppercase', fontWeight: 600 }}>{s.label}</div>
+                <div key={s.label} className="col-6 col-md-3">
+                  <div className="stat-card-premium h-100">
+                    <div className="fw-black" style={{ fontSize: '1.5rem', color: 'var(--gx-neon)', lineHeight: 1.1, fontVariantNumeric: 'tabular-nums' }}>{s.value}</div>
+                    <div style={{ fontSize: '0.65rem', color: 'rgba(226,232,240,0.45)', letterSpacing: '0.08em', textTransform: 'uppercase', fontWeight: 600, marginTop: '4px' }}>{s.label}</div>
+                  </div>
                 </div>
               ))}
             </div>
 
-            {/* Trust indicators */}
-            <div className="animate-fade-in d-flex flex-wrap justify-content-center gap-3 mt-5" style={{ animationDelay:'0.5s' }}>
+            {/* Trust indicators badges */}
+            <div className="animate-fade d-flex flex-wrap justify-content-center gap-2 gap-md-3 mt-4" style={{ animationDelay:'0.5s' }}>
               {['No-Face Detection', 'Multi-Face Alert', 'Screenshot Block', 'Copy-Paste Prevention'].map(t => (
-                <div key={t} className="d-flex align-items-center gap-1" style={{ fontSize: '0.78rem', color: 'rgba(226,232,240,0.5)', fontWeight: 500 }}>
-                  <CheckCircle size={13} style={{ color: 'var(--gx-neon)', flexShrink: 0 }} />
+                <div key={t} className="indicator-badge">
+                  <CheckCircle size={12} style={{ color: 'var(--gx-neon)' }} />
                   {t}
                 </div>
               ))}
@@ -201,28 +201,18 @@ const Home = () => {
             </p>
           </div>
 
-          <div className="row g-4">
-            {features.map((f) => (
-              <div key={f.title} className={`col-md-6 col-lg-4 animate-slide-up stagger-${f.delay}`}>
-                <div
-                  className="h-100 glass-panel glass-panel-hover cyber-hologram"
-                  style={{ borderRadius: '16px', padding: '28px', cursor: 'default', position: 'relative', overflow: 'hidden' }}
-                >
-                  {/* Decorative corner */}
-                  <div style={{ position: 'absolute', top: 0, right: 0, width: '60px', height: '60px', background: `radial-gradient(circle at top right, ${f.iconColor}10, transparent)`, borderRadius: '0 16px 0 60px' }} />
-
-                  <div className="icon-box mb-4" style={{
-                    background: `linear-gradient(135deg, ${f.iconColor}20, ${f.iconColor}05)`,
-                    border: `1px solid ${f.iconColor}30`,
-                    color: f.iconColor,
-                    width: '52px', height: '52px', borderRadius: '14px',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center'
-                  }}>
-                    <f.icon size={22} />
+          <div className="row g-3 g-md-4">
+            {features.map((f, i) => (
+              <div key={f.title} className={`col-md-4 animate-up stagger-${i + 1}`}>
+                <div className="stat-card-premium h-100">
+                  <div 
+                    className="mb-4 d-inline-flex align-items-center justify-content-center rounded-3" 
+                    style={{ width: '48px', height: '48px', background: 'rgba(132,204,22,0.1)', border: '1px solid rgba(132,204,22,0.25)', color: 'var(--gx-neon)' }}
+                  >
+                    <f.icon size={24} />
                   </div>
-
-                  <h3 className="fw-bold mb-2" style={{ fontSize: '1rem', color: '#f1f5f9' }}>{f.title}</h3>
-                  <p style={{ fontSize: '0.875rem', color: 'rgba(226,232,240,0.55)', lineHeight: 1.7, margin: 0 }}>{f.desc}</p>
+                  <h4 style={{ fontWeight: 800, color: '#f8fafc', marginBottom: '12px', fontSize: '1.1rem', letterSpacing: '-0.01em' }}>{f.title}</h4>
+                  <p style={{ color: 'rgba(226,232,240,0.45)', fontSize: '0.85rem', lineHeight: 1.6, margin: 0 }}>{f.desc}</p>
                 </div>
               </div>
             ))}

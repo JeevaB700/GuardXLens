@@ -143,10 +143,39 @@ const institutionWelcomeTemplate = (institutionName, adminName, loginUrl) => wra
   </div>
 `);
 
+// 6. Institution Rejection
+const institutionRejectionTemplate = (institutionName, adminName) => wrap(`
+  <div style="${cardStyle}">
+    <h2 style="color: #ef4444; margin-top: 0;">Registration Update</h2>
+    <p>Hello ${adminName},</p>
+    <p>We regret to inform you that your registration request for <strong>${institutionName}</strong> has been <strong>rejected</strong> at this time.</p>
+    <p>This may be due to incomplete information or failure to meet platform requirements. If you believe this is an error, please reach out to our support team.</p>
+  </div>
+`);
+
+// 7. Student Created by Admin (with Password)
+const adminCreatedStudentTemplate = (name, institutionName, email, password) => wrap(`
+  <div style="${cardStyle}">
+    <h2 style="color: #ffffff; margin-top: 0;">Account Created!</h2>
+    <p>Hello ${name},</p>
+    <p>A new student account has been created for you by the administrator of <strong>${institutionName}</strong>.</p>
+    <div style="background: rgba(0,0,0,0.2); padding: 15px; border-radius: 8px; margin: 20px 0;">
+      <p style="margin: 5px 0;"><strong>Login Email:</strong> ${email}</p>
+      <p style="margin: 5px 0;"><strong>Temporary Password:</strong> ${password}</p>
+    </div>
+    <p>Please log in and change your password immediately for security.</p>
+    <div style="text-align: center;">
+      <a href="${process.env.CLIENT_URL || 'http://localhost:5173'}/login" style="${buttonStyle}">Log In Now</a>
+    </div>
+  </div>
+`);
+
 module.exports = {
   studentWelcomeTemplate,
   institutionStudentNotificationTemplate,
   passwordResetTemplate,
   institutionApprovalTemplate,
-  institutionWelcomeTemplate
+  institutionWelcomeTemplate,
+  institutionRejectionTemplate,
+  adminCreatedStudentTemplate
 };

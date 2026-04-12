@@ -31,7 +31,7 @@ const DashboardHome = () => {
                 students: studRes.data.results?.length || 0,
                 exams: examsRes.data.exams?.length || 0,
                 institutions: instRes.data.institutions?.length || 0,
-                violations: logsRes.data.logs?.length || 0,
+                violations: logsRes.data.totalCount || 0,
             });
             setRecentLogs(logsRes.data.logs?.slice(0, 10) || []);
         } catch (e) { console.error(e); }
@@ -61,7 +61,7 @@ const DashboardHome = () => {
     ];
 
     return (
-        <div className="animate-fade-in" style={{ padding: '28px', maxWidth: '1300px' }} data-bs-theme="dark">
+        <div className="animate-fade-in p-mobile-3" style={{ padding: '28px', maxWidth: '1300px' }} data-bs-theme="dark">
 
             {/* ===== HEADER ===== */}
             <div className="animate-slide-down d-flex justify-content-between align-items-start mb-5 flex-wrap gap-3">
@@ -82,26 +82,22 @@ const DashboardHome = () => {
             </div>
 
             {/* ===== STAT CARDS ===== */}
-            <div className="row g-4 mb-5">
+            <div className="row g-3 g-md-4 mb-5">
                 {statCards.map((s, i) => (
-                    <div key={s.title} className={`col-md-6 col-xl-3 animate-slide-up stagger-${i + 1}`}>
-                        <div style={{
+                    <div key={s.title} className={`col-6 col-xl-3 animate-up stagger-${i + 1}`}>
+                        <div className="stat-card-premium h-100 p-mobile-3" style={{
                             background: 'rgba(10,15,30,0.7)', backdropFilter: 'blur(16px)',
-                            border: `1px solid ${s.accent}20`, borderRadius: '16px',
-                            padding: '22px', transition: 'all 0.3s cubic-bezier(0.4,0,0.2,1)',
-                            position: 'relative', overflow: 'hidden',
-                        }}
-                            onMouseEnter={e => { e.currentTarget.style.borderColor = `${s.accent}40`; e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.boxShadow = `0 16px 40px rgba(0,0,0,0.5), 0 0 0 1px ${s.accent}15`; }}
-                            onMouseLeave={e => { e.currentTarget.style.borderColor = `${s.accent}20`; e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; }}
-                        >
+                            border: `1px solid ${s.accent}20`,
+                            padding: '22px',
+                        }}>
                             <div style={{ position: 'absolute', top: '-20px', right: '-20px', width: '80px', height: '80px', background: `radial-gradient(circle, ${s.accent}12, transparent)`, borderRadius: '50%', pointerEvents: 'none' }} />
                             <div className="d-flex align-items-center gap-3 mb-3">
                                 <div style={{ width: '42px', height: '42px', borderRadius: '12px', background: `${s.accent}15`, border: `1px solid ${s.accent}25`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: s.accent, flexShrink: 0 }}>
                                     <s.icon size={19} />
                                 </div>
-                                <span style={{ fontSize: '0.68rem', fontWeight: 700, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>{s.title}</span>
+                                <span className="d-none d-sm-inline" style={{ fontSize: '0.68rem', fontWeight: 700, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>{s.title}</span>
                             </div>
-                            <div style={{ fontSize: '2.6rem', fontWeight: 900, color: '#f8fafc', lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>{s.value}</div>
+                            <div style={{ fontSize: 'clamp(1.8rem, 4vw, 2.6rem)', fontWeight: 900, color: '#f8fafc', lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>{s.value}</div>
                             {/* mini progress */}
                             <div style={{ height: '3px', background: 'rgba(255,255,255,0.06)', borderRadius: '2px', marginTop: '14px', overflow: 'hidden' }}>
                                 <div style={{ height: '100%', width: '45%', background: `linear-gradient(90deg, ${s.accent}, ${s.accent}80)`, borderRadius: '2px', boxShadow: `0 0 8px ${s.accent}60` }} />

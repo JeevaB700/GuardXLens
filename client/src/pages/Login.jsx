@@ -66,7 +66,7 @@ const Login = () => {
                   <img src="/logo.png" alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
                 </div>
                 <div>
-                  <h2 style={{ fontWeight: 800, color: '#f8fafc', margin: 0, letterSpacing: '-0.02em' }}>GuardXLens</h2>
+                <h2 className="glitch-text" data-text="GuardXLens" style={{ fontWeight: 800, color: '#f8fafc', margin: 0, letterSpacing: '-0.02em' }}>GuardXLens</h2>
                   <div className="d-flex align-items-center gap-1 mt-1">
                     <div className="status-dot status-dot-green"></div>
                     <span style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.35)', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase' }}>All Systems Online</span>
@@ -124,7 +124,7 @@ const Login = () => {
                   <div className="logo-cyber-glow d-flex align-items-center justify-content-center" style={{ width: '44px', height: '44px', borderRadius: '12px', padding: '8px' }}>
                     <img src="/logo.png" alt="" style={{ width: '100%', objectFit: 'contain' }} />
                   </div>
-                  <span style={{ fontWeight: 800, color: '#f8fafc', fontSize: '1.2rem' }}>GuardXLens</span>
+                  <span className="glitch-text" data-text="GuardXLens" style={{ fontWeight: 800, color: '#f8fafc', fontSize: '1.2rem' }}>GuardXLens</span>
                 </div>
                 <h2 style={{ fontWeight: 800, color: '#f8fafc', marginBottom: '6px', letterSpacing: '-0.02em' }}>Sign In</h2>
                 <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: '0.85rem' }}>Access your secure portal</p>

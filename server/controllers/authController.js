@@ -4,12 +4,18 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const nodemailer = require('nodemailer');
+const PendingInstitution = require('../models/PendingInstitution');
+const Exam = require('../models/Exam');
+const Result = require('../models/Result');
+const ActivityLog = require('../models/ActivityLog');
 const {
   studentWelcomeTemplate,
   institutionStudentNotificationTemplate,
   passwordResetTemplate,
   institutionApprovalTemplate,
-  institutionWelcomeTemplate
+  institutionWelcomeTemplate,
+  institutionRejectionTemplate,
+  adminCreatedStudentTemplate
 } = require('../utils/emailTemplates');
 
 // Helper to get transporter
@@ -82,85 +88,98 @@ const registerStudent = async (req, res) => {
   }
 };
 
-// 2. REGISTER INSTITUTION (Sends Request to Admin)
+// 2. REGISTER INSTITUTION (Sends Request to Admin Dashboard)
 const registerInstitution = async (req, res) => {
   try {
     const { institutionName, adminName, email, password } = req.body;
 
+    // Check if email already exists in approved users, approved institutions, or already pending
     const userExists = await User.findOne({ email });
     if (userExists) return res.status(400).json({ message: "Email already registered in the system." });
+
+    const pendingExists = await PendingInstitution.findOne({ email, status: 'pending' });
+    if (pendingExists) return res.status(400).json({ message: "A registration request for this email is already pending approval." });
 
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    // Create a temporary registration token instead of saving to DB
-    const registrationToken = jwt.sign(
-      { institutionName, adminName, email, password: hashedPassword },
-      process.env.JWT_SECRET,
-      { expiresIn: '7d' } // Link valid for 7 days
-    );
+    // Clear any existing rejected/processed requests for this email to avoid unique constraint errors
+    await PendingInstitution.deleteMany({ email, status: { $ne: 'pending' } });
 
-    const serverUrl = process.env.SERVER_URL || 'http://localhost:5000';
-    const approveUrl = `${serverUrl}/api/auth/approve-institution?token=${registrationToken}`;
+    // Save metadata to DB instead of just a token
+    const pendingRequest = await PendingInstitution.create({
+      institutionName, adminName, email, password: hashedPassword
+    });
+
+    const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
+    const adminApprovalUrl = `${clientUrl}/admin/approvals`;
     
-    // --- DEV HELPER: Log the link to terminal so you can test without emails working ---
+    // --- DEV HELPER ---
     console.log("-----------------------------------------");
-    console.log("🔗 INSTITUTION APPROVAL LINK (Admin Only):");
-    console.log(approveUrl);
+    console.log("🚀 NEW INSTITUTION REQUEST:");
+    console.log(`Institution: ${institutionName}`);
+    console.log(`Admin Link: ${adminApprovalUrl}`);
     console.log("-----------------------------------------");
 
-    const htmlMessage = institutionApprovalTemplate(institutionName, adminName, email, approveUrl);
+    const htmlMessage = institutionApprovalTemplate(institutionName, adminName, email, adminApprovalUrl);
 
     try {
       const transporter = getTransporter();
       if (!transporter) {
-        console.log("ℹ️ SYSTEM: Email not configured fully. Staying in Dev Mode.");
         return res.status(200).json({ 
           success: true, 
-          message: "Registration submitted (Dev Mode: Check Server Console for approval link)" 
+          message: "Registration submitted to Admin Dashboard." 
         });
       }
 
       const mailOptions = {
-        from: `"GuardXLens Admin System" <${process.env.EMAIL_USER}>`,
-        to: process.env.EMAIL_USER, // Send TO the admin themselves
-        subject: 'Action Required: New Institution Registration',
+        from: `"GuardXLens System" <${process.env.EMAIL_USER}>`,
+        to: process.env.EMAIL_USER, // Admin Email
+        subject: 'New Institution Registration: Approval Required',
         html: htmlMessage,
       };
 
       await transporter.sendMail(mailOptions);
-      console.log("✅ Approval email sent to Admin.");
-      res.status(200).json({ success: true, message: "Registration request sent to Admin for approval. You will receive an email once approved." });
+      res.status(200).json({ success: true, message: "Registration request submitted. Admin will review your request shortly." });
     } catch (err) {
-      console.error("❌ EMAIL ERROR:", err.message);
-      res.status(200).json({ success: true, message: "Registration submitted, but backend email failed. Admin link logged in console." });
+      console.error("❌ MAIL FAIL:", err.message);
+      res.status(200).json({ success: true, message: "Registration submitted to Dashboard (Email delivery failed)." });
     }
-  } catch (error) { res.status(500).json({ message: "Server Error" }); }
+  } catch (error) { 
+    console.error("❌ REGISTRATION ERROR:", error);
+    res.status(500).json({ message: "Server Error" }); 
+  }
 };
 
-// 2b. APPROVE INSTITUTION
+// 2b. GET PENDING REQUESTS (Admin Only)
+const getPendingInstitutions = async (req, res) => {
+  try {
+    const requests = await PendingInstitution.find({ status: 'pending' }).sort({ createdAt: -1 });
+    res.json({ success: true, requests });
+  } catch (e) { res.status(500).json({ message: "Error fetching requests" }); }
+};
+
+// 2c. APPROVE INSTITUTION
 const approveInstitution = async (req, res) => {
   try {
-    const { token } = req.query;
-    if (!token) return res.status(400).send("No approval token provided.");
-
-    // Verify token
-    let decoded;
-    try {
-      decoded = jwt.verify(token, process.env.JWT_SECRET);
-    } catch (err) {
-      return res.status(400).send("<h2>Token invalid or expired.</h2><p>The registration request may have timed out.</p>");
+    const { id } = req.body; // Approved by ID from dashboard
+    const request = await PendingInstitution.findById(id);
+    
+    if (!request || request.status !== 'pending') {
+        return res.status(404).json({ message: "Request not found or already processed" });
     }
 
-    const { institutionName, adminName, email, password } = decoded;
+    const { institutionName, adminName, email, password } = request;
 
-    // Check if user already got created (admin clicked link twice)
+    // Double check email uniqueness
     const userExists = await User.findOne({ email });
     if (userExists) {
-      return res.status(400).send("<h2>Institution already approved!</h2><p>This institution is already active in the system.</p>");
+      request.status = 'rejected';
+      await request.save();
+      return res.status(400).json({ message: "User with this email already exists" });
     }
 
-    // Create Admin User using the hashed password from the token
+    // Create Admin User
     const newUser = await User.create({
       name: adminName, email, password, role: 'institution'
     });
@@ -174,56 +193,58 @@ const approveInstitution = async (req, res) => {
     newUser.institutionId = newInstitution._id;
     await newUser.save();
 
-    // Send Welcome Email to the Institution
+    // Mark as approved
+    request.status = 'approved';
+    await request.save();
+
+    // Send Welcome Email
     const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
     const loginUrl = `${clientUrl}/login`;
-    const welcomeHtml = `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 8px;">
-        <div style="text-align: center; margin-bottom: 20px;">
-          <h2 style="color: #1e293b; margin: 0;">Welcome to GuardXLens!</h2>
-        </div>
-        <div style="background-color: #f8fafc; padding: 20px; border-radius: 6px;">
-          <p>Hello <strong>${adminName}</strong>,</p>
-          <p>Great news! Your registration request for <strong>${institutionName}</strong> has been <strong>approved</strong> by the administrator.</p>
-          <p>You can now log in to your dashboard and start managing your secure exams and students.</p>
-        </div>
-        <div style="margin-top: 35px; text-align: center;">
-          <a href="${loginUrl}" style="background-color: #3b82f6; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">Log in to GuardXLens</a>
-        </div>
-      </div>
-    `;
-
+    
     try {
       const transporter = getTransporter();
       if (transporter) {
         await transporter.sendMail({
           from: `"GuardXLens Admin" <${process.env.EMAIL_USER}>`,
-          to: email, // Send to the newly approved institution
-          subject: 'GuardXLens Account Approved!',
+          to: email,
+          subject: 'Your Institution account is Approved!',
           html: institutionWelcomeTemplate(institutionName, adminName, loginUrl),
         });
-        console.log(`✅ Welcome approval email sent to ${email}`);
       }
-    } catch (err) {
-      console.error("❌ Failed to send welcome email:", err.message);
-    }
+    } catch (err) { console.error("Welcome email failed"); }
 
-    // Response page for Admin (HTML)
-    res.status(200).send(`
-      <div style="font-family: Arial, sans-serif; text-align: center; margin-top: 80px; padding: 20px;">
-        <div style="font-size: 64px; color: #22c55e; margin-bottom: 20px;">✅</div>
-        <h1 style="color: #1e293b;">Institution Approved Successfully!</h1>
-        <p style="color: #475569; font-size: 18px;"><strong>${institutionName}</strong> has been added to GuardXLens.</p>
-        <p style="color: #64748b; margin-top: 10px;">A welcome email has been sent to exactly <strong>${email}</strong>.</p>
-        <div style="margin-top: 40px; color: #94a3b8; font-size: 14px;">
-          <p>You may safely close this window.</p>
-        </div>
-      </div>
-    `);
+    res.json({ success: true, message: `${institutionName} has been approved.` });
   } catch (error) {
     console.error(error);
-    res.status(500).send("Internal Server Error during approval.");
+    res.status(500).json({ message: "Approval process failed." });
   }
+};
+
+// 2d. REJECT INSTITUTION
+const rejectInstitution = async (req, res) => {
+  try {
+    const { id } = req.body;
+    const request = await PendingInstitution.findById(id);
+    if (!request) return res.status(404).json({ message: "Request not found" });
+
+    request.status = 'rejected';
+    await request.save();
+
+    // Send Rejection Email
+    try {
+        const transporter = getTransporter();
+        if (transporter) {
+            await transporter.sendMail({
+                from: `"GuardXLens Admin" <${process.env.EMAIL_USER}>`,
+                to: request.email,
+                subject: 'Update on your Institution Registration',
+                html: institutionRejectionTemplate(request.institutionName, request.adminName),
+            });
+        }
+    } catch (err) { console.error("Rejection email failed"); }
+
+    res.json({ success: true, message: "Institution request rejected." });
+  } catch (e) { res.status(500).json({ message: "Reject failed" }); }
 };
 
 // 3. LOGIN
@@ -378,6 +399,7 @@ const resetPassword = async (req, res) => {
 };
 
 // 10. DEFAULT SUPER ADMIN
+// 10. DEFAULT SUPER ADMIN
 const createDefaultAdmin = async () => {
   try {
     const adminExists = await User.findOne({ role: 'admin' });
@@ -393,6 +415,97 @@ const createDefaultAdmin = async () => {
   } catch (error) { console.error("Error creating admin:", error); }
 };
 
+// 11. DELETE STUDENT (Admin/Institution Only)
+const deleteStudent = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // 1. Delete Results
+    await Result.deleteMany({ studentId: id });
+    // 2. Delete Activity Logs
+    await ActivityLog.deleteMany({ studentId: id });
+    // 3. Delete User
+    await User.findByIdAndDelete(id);
+
+    res.json({ success: true, message: "Student deleted successfully" });
+  } catch (e) { res.status(500).json({ message: "Delete failed" }); }
+};
+
+// 12. DELETE INSTITUTION (Super Admin Only)
+const deleteInstitution = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const institution = await Institution.findById(id);
+    if (!institution) return res.status(404).json({ message: "Institution not found" });
+
+    // 1. Find all exams belonging to this institution
+    const exams = await Exam.find({ institutionId: id });
+    const examIds = exams.map(ex => ex._id);
+
+    // 2. Delete all results associated with these exams
+    await Result.deleteMany({ examId: { $in: examIds } });
+    
+    // 3. Delete all activity logs associated with these exams
+    await ActivityLog.deleteMany({ examId: { $in: examIds } });
+
+    // 4. Delete all exams
+    await Exam.deleteMany({ institutionId: id });
+
+    // 5. Find and Delete all students belonging to this institution
+    // This catches students and the institution admin user
+    await Result.deleteMany({ studentId: { $in: await User.find({ institutionId: id }).select('_id') } });
+    await ActivityLog.deleteMany({ studentId: { $in: await User.find({ institutionId: id }).select('_id') } });
+    await User.deleteMany({ institutionId: id });
+
+    // 6. Delete the institution itself
+    await Institution.findByIdAndDelete(id);
+
+    res.json({ success: true, message: `Institution and all associated data deleted successfully.` });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ message: "Failed to delete institution and associated data." });
+  }
+};
+
+// 13. ADMIN CREATE STUDENT (Manual creation by Admin)
+const adminCreateStudent = async (req, res) => {
+    try {
+        const { name, email, password, institutionId } = req.body;
+        
+        // Find institution
+        const institution = await Institution.findById(institutionId);
+        if (!institution) return res.status(404).json({ message: "Institution not found" });
+
+        const userExists = await User.findOne({ email });
+        if (userExists) return res.status(400).json({ message: "Email already exists" });
+
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(password, salt);
+
+        const student = await User.create({
+            name, email, password: hashedPassword, role: 'student', institutionId
+        });
+
+        // Send Welcome Email with Credentials
+        try {
+            const transporter = getTransporter();
+            if (transporter) {
+                await transporter.sendMail({
+                    from: `"GuardXLens Admin" <${process.env.EMAIL_USER}>`,
+                    to: email,
+                    subject: 'Your Account is Ready - GuardXLens',
+                    html: adminCreatedStudentTemplate(name, institution.name, email, password),
+                });
+            }
+        } catch (err) { console.error("Admin student welcome email failed"); }
+
+        res.status(201).json({ success: true, student });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ message: "Account creation failed" });
+    }
+};
+
 module.exports = {
   registerStudent,
   registerInstitution,
@@ -404,5 +517,11 @@ module.exports = {
   getAllStudents,
   forgotPassword,
   resetPassword,
-  createDefaultAdmin
+  createDefaultAdmin,
+  getPendingInstitutions,
+  approveInstitution,
+  rejectInstitution,
+  deleteStudent,
+  deleteInstitution,
+  adminCreateStudent
 };

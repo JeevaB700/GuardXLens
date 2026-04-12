@@ -59,6 +59,12 @@ const ResetPassword = () => {
                                 ) : (
                                     <>
                                         <div className="text-center mb-4">
+                                            <div className="d-flex align-items-center justify-content-center gap-2 mb-4">
+                                                <div className="logo-cyber-glow d-flex align-items-center justify-content-center" style={{ width: '40px', height: '40px', borderRadius: '10px', padding: '7px' }}>
+                                                    <img src="/logo.png" alt="" style={{ width: '100%', objectFit: 'contain' }} />
+                                                </div>
+                                                <span className="glitch-text" data-text="GuardXLens" style={{ fontWeight: 800, color: '#f8fafc', fontSize: '1.2rem' }}>GuardXLens</span>
+                                            </div>
                                             <div className="d-inline-flex align-items-center justify-content-center p-3 rounded-circle bg-primary bg-opacity-10 text-primary mb-3">
                                                 <Lock size={32} />
                                             </div>

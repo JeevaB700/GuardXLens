@@ -4,36 +4,18 @@ import { Users, FileCheck, Plus, Activity, ArrowRight, WalletCards, TrendingUp, 
 import { useNavigate, Link } from 'react-router-dom';
 import API_BASE_URL from '../../config';
 
-const StatCard = ({ icon: Icon, iconColor, bg, title, value, badge, badgeColor, actionLabel, onClick, delay, accent }) => (
-  <div className={`col-md-6 col-lg-6 animate-slide-up stagger-${delay}`}>
+const StatCard = ({ icon: Icon, iconColor, title, value, badge, actionLabel, onClick, delay, accent }) => (
+  <div className={`col-12 col-xl-6 animate-up stagger-${delay}`}>
     <div
-      className="stat-card h-100 cursor-pointer"
+      className="stat-card-premium h-100 cursor-pointer p-mobile-3"
       onClick={onClick}
       style={{
         background: 'rgba(10,15,30,0.7)',
         backdropFilter: 'blur(20px)',
         border: `1px solid ${accent}22`,
-        borderRadius: '18px',
         padding: '28px',
-        transition: 'all 0.35s cubic-bezier(0.4, 0, 0.2, 1)',
-        boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
-        position: 'relative',
-        overflow: 'hidden',
-      }}
-      onMouseEnter={e => {
-        e.currentTarget.style.borderColor = `${accent}44`;
-        e.currentTarget.style.transform = 'translateY(-4px)';
-        e.currentTarget.style.boxShadow = `0 20px 60px rgba(0,0,0,0.5), 0 0 0 1px ${accent}22`;
-      }}
-      onMouseLeave={e => {
-        e.currentTarget.style.borderColor = `${accent}22`;
-        e.currentTarget.style.transform = 'translateY(0)';
-        e.currentTarget.style.boxShadow = '0 8px 32px rgba(0,0,0,0.4)';
       }}
     >
-      {/* Glow backdrop */}
-      <div style={{ position: 'absolute', top: '-30px', right: '-30px', width: '100px', height: '100px', background: `radial-gradient(circle, ${accent}15, transparent 70%)`, borderRadius: '50%', pointerEvents: 'none' }} />
-
       <div className="d-flex align-items-start justify-content-between mb-4">
         <div style={{
           width: '52px', height: '52px', borderRadius: '14px',
@@ -54,7 +36,7 @@ const StatCard = ({ icon: Icon, iconColor, bg, title, value, badge, badgeColor, 
       <div style={{ fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'rgba(255,255,255,0.35)', marginBottom: '8px' }}>{title}</div>
 
       <div className="d-flex align-items-end justify-content-between">
-        <div style={{ fontSize: '3.5rem', fontWeight: 900, color: '#f8fafc', lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>{value}</div>
+        <div style={{ fontSize: 'clamp(2.5rem, 5vw, 3.5rem)', fontWeight: 900, color: '#f8fafc', lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>{value}</div>
         <div className="d-flex align-items-center gap-1 mb-2" style={{ color: iconColor, fontSize: '0.8rem', fontWeight: 600 }}>
           {actionLabel} <ArrowRight size={14} />
         </div>
@@ -139,7 +121,7 @@ const InstitutionDashboard = () => {
   const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
 
   return (
-    <div className="animate-fade-in" style={{ padding: '28px', maxWidth: '1300px' }} data-bs-theme="dark">
+    <div className="animate-fade-in p-mobile-3" style={{ padding: '28px', maxWidth: '1300px' }} data-bs-theme="dark">
 
       {/* ========== HEADER ========== */}
       <div className="animate-slide-down d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3 mb-5">

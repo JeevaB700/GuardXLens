@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, FileCheck, Users, PlusCircle, LogOut, Menu, Globe, ChevronRight } from 'lucide-react';
+import { LayoutDashboard, FileCheck, Users, PlusCircle, LogOut, Menu, Globe, ChevronRight, ShieldCheck } from 'lucide-react';
 import { Offcanvas } from 'react-bootstrap';
 
 const NavItem = ({ to, icon: Icon, label, onClick, badge }) => (
@@ -69,8 +69,8 @@ const AdminLayout = () => {
           <div className="logo-cyber-glow p-1 rounded d-flex align-items-center justify-content-center" style={{ width: '44px', height: '44px', flexShrink: 0 }}>
             <img src="/logo.png" alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
           </div>
-          <div>
-            <h6 className="mb-0 fw-bold text-white" style={{ letterSpacing: '-0.01em' }}>GuardXLens</h6>
+          <div className="animate-fade" style={{ animationDelay: '0.1s' }}>
+            <h6 className="mb-0 fw-bold text-white glitch-text" data-text="GuardXLens" style={{ letterSpacing: '-0.01em' }}>GuardXLens</h6>
             <div className="d-flex align-items-center gap-1 mt-1">
               <div className="status-dot status-dot-green"></div>
               <small style={{ color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', fontSize: '0.65rem', letterSpacing: '0.1em', fontWeight: 600 }}>
@@ -104,7 +104,7 @@ const AdminLayout = () => {
       )}
 
       {/* Nav Links */}
-      <nav className="flex-grow-1 px-3 py-3" style={{ overflowY: 'auto' }}>
+      <nav className="flex-grow-1 px-3 py-3 animate-fade" style={{ overflowY: 'auto', animationDelay: '0.2s' }}>
         <ul className="nav flex-column" style={{ gap: 0, listStyle: 'none', padding: 0, margin: 0 }}>
           {role === 'institution' && (
             <>
@@ -123,6 +123,7 @@ const AdminLayout = () => {
                 <span style={{ fontSize: '0.65rem', fontWeight: 700, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Overview</span>
               </li>
               <NavItem to="/admin/dashboard" icon={LayoutDashboard} label="Dashboard" onClick={onNavigate} />
+              <NavItem to="/admin/approvals" icon={ShieldCheck} label="Approvals" onClick={onNavigate} />
               <NavItem to="/admin/students" icon={Globe} label="Institutions" onClick={onNavigate} />
             </>
           )}
@@ -196,7 +197,7 @@ const AdminLayout = () => {
             <div className="logo-cyber-glow p-1 rounded" style={{ width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <img src="/logo.png" alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
             </div>
-            <span className="fw-bold text-white" style={{ fontSize: '0.95rem' }}>GuardXLens</span>
+            <span className="fw-bold text-white glitch-text" data-text="GuardXLens" style={{ fontSize: '0.95rem' }}>GuardXLens</span>
           </div>
           <button
             className="btn btn-sm d-flex align-items-center gap-1"
@@ -225,7 +226,7 @@ const AdminLayout = () => {
         </Offcanvas>
 
         {/* Page Content */}
-        <main className="flex-grow-1 overflow-auto custom-scrollbar">
+        <main className="flex-grow-1 overflow-auto custom-scrollbar animate-up" style={{ animationDelay: '0.1s' }}>
           <Outlet />
         </main>
       </div>

@@ -35,6 +35,18 @@ const Register = () => {
     const [showPw, setShowPw] = useState(false);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
+    const [countdown, setCountdown] = useState(5);
+    const [showApprovalModal, setShowApprovalModal] = useState(false);
+
+    useEffect(() => {
+        let timer;
+        if (showApprovalModal && countdown > 0) {
+            timer = setTimeout(() => setCountdown(prev => prev - 1), 1000);
+        } else if (showApprovalModal && countdown === 0) {
+            navigate('/login');
+        }
+        return () => clearTimeout(timer);
+    }, [showApprovalModal, countdown, navigate]);
 
     useEffect(() => {
         document.title = 'GuardXLens | Create Account';
@@ -55,8 +67,13 @@ const Register = () => {
         try {
             const res = await axios.post(`${API_BASE_URL}/api/auth/${endpoint}`, formData);
             if (res.data.success) {
-                setSuccess(res.data.isPending ? res.data.message : 'Registration successful! Redirecting to login…');
-                setTimeout(() => navigate('/login'), 2500);
+                if (role === 'institution') {
+                    setSuccess('Registration successful! Sending request to Admin...');
+                    setShowApprovalModal(true);
+                } else {
+                    setSuccess('Registration successful! Redirecting to login…');
+                    setTimeout(() => navigate('/login'), 2500);
+                }
             }
         } catch (err) {
             setError(err.response?.data?.message || 'Registration failed. Please try again.');
@@ -87,7 +104,7 @@ const Register = () => {
                                     <img src="/logo.png" alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
                                 </div>
                                 <div>
-                                    <h2 style={{ fontWeight: 800, color: '#f8fafc', margin: 0, letterSpacing: '-0.02em' }}>GuardXLens</h2>
+                                    <h2 className="glitch-text" data-text="GuardXLens" style={{ fontWeight: 800, color: '#f8fafc', margin: 0, letterSpacing: '-0.02em' }}>GuardXLens</h2>
                                     <div className="d-flex align-items-center gap-1 mt-1">
                                         <div className="status-dot status-dot-green"></div>
                                         <span style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.35)', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase' }}>Secure Platform</span>
@@ -137,7 +154,7 @@ const Register = () => {
                                     <div className="logo-cyber-glow d-flex align-items-center justify-content-center" style={{ width: '40px', height: '40px', borderRadius: '10px', padding: '7px' }}>
                                         <img src="/logo.png" alt="" style={{ width: '100%', objectFit: 'contain' }} />
                                     </div>
-                                    <span style={{ fontWeight: 800, color: '#f8fafc', fontSize: '1.1rem' }}>GuardXLens</span>
+                                    <span className="glitch-text" data-text="GuardXLens" style={{ fontWeight: 800, color: '#f8fafc', fontSize: '1.1rem' }}>GuardXLens</span>
                                 </div>
                                 <h2 style={{ fontWeight: 800, color: '#f8fafc', marginBottom: '4px', letterSpacing: '-0.02em' }}>Create Account</h2>
                                 <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '0.82rem' }}>Register as a student or institution</p>
@@ -260,6 +277,37 @@ const Register = () => {
                     </div>
                 </div>
             </div>
+            {/* APPROVAL PENDING MODAL */}
+            {showApprovalModal && (
+                <div className="modal-overlay d-flex align-items-center justify-content-center p-3">
+                    <div className="glass-panel text-center p-5 rounded-4 animate-scale-up border border-white border-opacity-10" style={{ maxWidth: '450px', boxShadow: '0 25px 80px rgba(0,0,0,0.8)' }}>
+                        <div className="p-4 rounded-circle d-inline-flex mb-4" style={{ background: 'rgba(132, 204, 22, 0.1)', border: '1px solid rgba(132, 204, 22, 0.15)' }}>
+                            <ShieldCheck size={48} style={{ color: 'var(--gx-neon)' }} />
+                        </div>
+                        <h3 className="text-white mb-3 glitch-text" data-text="Awaiting Approval">Awaiting Approval</h3>
+                        <p className="text-secondary mb-4" style={{ fontSize: '0.95rem', lineHeight: 1.6 }}>
+                            Registration successful! Your institution request has been sent for manual verification. 
+                            <strong> GuardXLens Super Admin</strong> will review your details shortly.
+                        </p>
+                        
+                        <div className="p-4 mb-4 rounded-4" style={{ background: 'rgba(255, 255, 255, 0.03)', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
+                            <span className="text-secondary small uppercase tracking-wider fw-bold">Redirecting to login in</span>
+                            <div className="display-4 fw-black mt-2" style={{ color: 'var(--gx-neon)', fontWeight: 900 }}>{countdown}</div>
+                            <span className="text-secondary small">seconds</span>
+                        </div>
+                        
+                        <button className="btn btn-outline-secondary btn-sm rounded-3 border-white border-opacity-10" onClick={() => navigate('/login')}>
+                            Cancel & Back to Login
+                        </button>
+                    </div>
+                    <style>{`
+                        .modal-overlay {
+                            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+                            background: rgba(0,0,0,0.92); backdrop-filter: blur(15px); z-index: 2000;
+                        }
+                    `}</style>
+                </div>
+            )}
         </div>
     );
 };

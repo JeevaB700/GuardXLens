@@ -19,6 +19,7 @@ import ResetPassword from './pages/ResetPassword';
 // --- PAGES: SUPER ADMIN ---
 import DashboardHome from './pages/admin/DashboardHome';
 import AdminStudents from './pages/admin/AdminStudents';
+import Approvals from './pages/admin/Approvals';
 
 // --- PAGES: INSTITUTION ---
 import InstitutionDashboard from './pages/Institution/InstitutionDashboard';
@@ -90,6 +91,7 @@ function App() {
                 }>
                     <Route path="dashboard" element={<DashboardHome />} />
                     <Route path="students" element={<AdminStudents />} />
+                    <Route path="approvals" element={<Approvals />} />
                     <Route index element={<Navigate to="dashboard" replace />} />
                 </Route>
 

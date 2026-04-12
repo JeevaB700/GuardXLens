@@ -85,8 +85,12 @@ const TakeExam = () => {
 
     // --- SECURITY LOGIC ---
     const logViolation = async (action, details) => {
+        // GUARD: Only log if exam is strictly active and not in process of submitting or finished
+        if (!isExamStarted || isSubmitting || showSuccessModal || showTerminationModal) return;
+
         try {
             const token = sessionStorage.getItem('token');
+            if (!token) return;
             await axios.post(`${API_BASE_URL}/api/log`, { examId: id, action, details }, { headers: { Authorization: `Bearer ${token}` } });
         } catch (e) { }
     };
@@ -229,7 +233,9 @@ const TakeExam = () => {
 
         // Aggressive Focus Polling (Every 100ms) - CAUTION: Higher frequency to catch fast OS overlays
         const focusPollInterval = setInterval(() => {
-            if (!isExamStarted) return;
+            // Check all guards including modal states
+            if (!isExamStarted || isSubmitting || showSuccessModal || showTerminationModal) return;
+            
             const hasFocus = document.hasFocus();
             const isTabActive = !document.hidden;
 
@@ -246,7 +252,7 @@ const TakeExam = () => {
             clearInterval(focusPollInterval);
             if (screenDetails) screenDetails.onscreenchange = null;
         };
-    }, [handleSecurityViolation, checkDeviceIntegrity, isExamStarted, isFocusLost]);
+    }, [handleSecurityViolation, checkDeviceIntegrity, isExamStarted, isFocusLost, isSubmitting, showSuccessModal, showTerminationModal]);
 
     const requestFullScreen = () => {
         const elem = document.documentElement;
@@ -440,7 +446,7 @@ const TakeExam = () => {
             document.removeEventListener('paste', handlePaste, true);
             document.removeEventListener('drop', handleDrop, true);
         };
-    }, [handleSecurityViolation, showTerminationModal]);
+    }, [handleSecurityViolation, showTerminationModal, isExamStarted, isSubmitting, showSuccessModal]);
 
 
     // 3. EDITOR SYNC

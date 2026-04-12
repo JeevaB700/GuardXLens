@@ -82,10 +82,16 @@ const ForgotPassword = () => {
                         <div style={{ position: 'relative' }}>
                             {/* Header */}
                             <div className="text-center mb-5">
+                                <div className="d-flex align-items-center justify-content-center gap-2 mb-3">
+                                    <div className="logo-cyber-glow d-flex align-items-center justify-content-center" style={{ width: '40px', height: '40px', borderRadius: '10px', padding: '7px' }}>
+                                        <img src="/logo.png" alt="" style={{ width: '100%', objectFit: 'contain' }} />
+                                    </div>
+                                    <span className="glitch-text" data-text="GuardXLens" style={{ fontWeight: 800, color: '#f8fafc', fontSize: '1.1rem' }}>GuardXLens</span>
+                                </div>
                                 <div style={{
                                     width: '64px', height: '64px', borderRadius: '18px', margin: '0 auto 20px',
                                     background: 'rgba(132,204,22,0.08)', border: '1px solid rgba(132,204,22,0.2)',
-                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    display: 'flex', alignItems: 'center', justifySelf: 'center', justifyContent: 'center'
                                 }}>
                                     <ShieldQuestion size={28} style={{ color: 'var(--gx-neon)' }} />
                                 </div>

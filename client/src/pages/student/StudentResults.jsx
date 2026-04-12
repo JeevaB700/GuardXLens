@@ -104,18 +104,22 @@ const StudentResults = () => {
         <div className="d-flex flex-column animate-fade-in" style={{ height: '100vh', background: 'linear-gradient(135deg, #080c18, #0a0f1e)', overflow: 'hidden' }} data-bs-theme="dark">
 
             {/* ===== TOP NAV ===== */}
-            <nav style={{ background: 'rgba(6,10,20,0.95)', backdropFilter: 'blur(20px)', borderBottom: '1px solid rgba(132,204,22,0.12)', padding: '12px 24px', flexShrink: 0, display: 'flex', alignItems: 'center', gap: '16px', boxShadow: '0 4px 20px rgba(0,0,0,0.4)' }}>
+            <nav style={{ background: 'rgba(6,10,20,0.95)', backdropFilter: 'blur(20px)', borderBottom: '1px solid rgba(132,204,22,0.12)', padding: '12px 24px', flexShrink: 0, display: 'flex', alignItems: 'center', gap: '16px', boxShadow: '0 4px 20px rgba(0,0,0,0.4)', zIndex: 100 }}>
+                <div className="d-flex align-items-center gap-2 me-auto">
+                    <div className="logo-cyber-glow rounded d-flex align-items-center justify-content-center" style={{ width: '32px', height: '32px', padding: '4px' }}>
+                        <img src="/logo.png" alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                    </div>
+                    <span className="glitch-text" data-text="GuardXLens" style={{ fontWeight: 800, color: '#f8fafc', fontSize: '1rem' }}>GuardXLens</span>
+                </div>
+                
+                <div style={{ width: '1px', height: '24px', background: 'rgba(255,255,255,0.1)' }} />
+                
                 <button onClick={() => navigate('/student/dashboard')} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '9px', padding: '6px 14px', cursor: 'pointer', color: 'rgba(255,255,255,0.6)', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem', fontWeight: 500, transition: 'all 0.2s ease' }}
                     onMouseEnter={e => e.currentTarget.style.color = 'white'}
                     onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.6)'}
                 >
                     <ArrowLeft size={14} /> Dashboard
                 </button>
-                <div style={{ width: '1px', height: '20px', background: 'rgba(255,255,255,0.1)' }} />
-                <div className="d-flex align-items-center gap-2">
-                    <FileText size={15} style={{ color: 'var(--gx-neon)' }} />
-                    <span style={{ fontWeight: 700, color: '#f1f5f9', fontSize: '0.9rem' }}>My Results</span>
-                </div>
             </nav>
 
             <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
@@ -142,17 +146,19 @@ const StudentResults = () => {
                                 <Award size={32} style={{ color: 'rgba(255,255,255,0.1)', marginBottom: '10px' }} />
                                 <p style={{ color: 'rgba(255,255,255,0.2)', fontSize: '0.8rem' }}>No exams taken yet.</p>
                             </div>
-                        ) : results.map((r) => {
+                        ) : results.map((r, i) => {
                             const pct = Math.round((r.score / r.totalMarks) * 100);
                             const isSelected = selectedResult?._id === r._id;
                             const accent = r.isMalpractice ? '#ef4444' : pct >= 40 ? '#84cc16' : '#f59e0b';
                             return (
                                 <div key={r._id} onClick={() => handleResultClick(r)}
+                                    className="animate-up"
                                     style={{
                                         padding: '12px 14px', borderRadius: '11px', marginBottom: '6px',
                                         cursor: 'pointer', transition: 'all 0.2s ease',
                                         background: isSelected ? `${accent}15` : 'rgba(255,255,255,0.02)',
                                         border: `1px solid ${isSelected ? `${accent}35` : 'rgba(255,255,255,0.05)'}`,
+                                        animationDelay: `${i * 0.05}s`
                                     }}
                                     onMouseEnter={e => { if (!isSelected) { e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'; } }}
                                     onMouseLeave={e => { if (!isSelected) { e.currentTarget.style.background = 'rgba(255,255,255,0.02)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.05)'; } }}

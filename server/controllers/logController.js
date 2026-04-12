@@ -31,9 +31,11 @@ const getLogs = async (req, res) => {
       .populate('studentId', 'name email')
       .populate('examId', 'title')
       .sort({ timestamp: -1 })
-      .limit(50); // Keep limit for safety, but now it's filtered
+      .limit(50); // Keep limit for safety for the list
       
-    res.json({ success: true, logs });
+    const totalCount = await ActivityLog.countDocuments(query);
+      
+    res.json({ success: true, logs, totalCount });
   } catch (e) { 
     console.error(e);
     res.status(500).json({ message: "Fetch failed" }); 
