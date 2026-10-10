@@ -101,7 +101,7 @@ const extractQuestions = async (req, res) => {
 
     const chatCompletion = await groq.chat.completions.create({
       messages: [{ role: "user", content: prompt }],
-      model: "llama-3.1-8b-instant",
+      model: "qwen/qwen3.8-27b",
     });
 
     let text = chatCompletion.choices[0].message.content;
@@ -218,7 +218,7 @@ const updateExam = async (req, res) => {
     const { title, subject, duration, questions, startTime, endTime, passMarks, cameraMonitoring } = req.body;
 
     const totalMarks = questions ? questions.reduce((sum, q) => sum + (parseInt(q.marks) || 0), 0) : undefined;
-    
+
     let updateFields = { title, subject, duration };
     if (questions) {
       updateFields.questions = questions;
@@ -268,7 +268,7 @@ const submitExam = async (req, res) => {
             correct = true;
           }
         }
-        
+
         if (q.type === 'SHORT' && ans && ans.length > 0) {
           correct = true;
         }
@@ -328,40 +328,57 @@ const generateTestCases = async (req, res) => {
   const { questionText } = req.body;
   if (!questionText) return res.status(400).json({ message: "Question text required" });
 
-  try {
-    // Use llama-4-scout-17b-16e-instruct for test case generation
-    const prompt = `
-      You are a strict Competitive Programming Judge. 
-      Generate 3 test cases for this coding problem: "${questionText}".
-      
-      Rules:
-      1. Input must be RAW DATA ONLY (e.g., "5 10").
-      2. Output must be RAW DATA ONLY (e.g., "15").
-      3. Return ONLY a valid JSON Array. No labels, no preamble, no markdown.
-      
-      Format: 
-      [{"input": "input1", "output": "output1"}, {"input": "input2", "output": "output2"}]
-    `;
+  const prompt = `
+    You are a strict Competitive Programming Judge. 
+    Generate 3 test cases for this coding problem: "${questionText}".
+    
+    Rules:
+    1. Input must be RAW DATA ONLY (e.g., "5 10").
+    2. Output must be RAW DATA ONLY (e.g., "15").
+    3. Return ONLY a valid JSON Array. No labels, no preamble, no markdown.
+    
+    Format: 
+    [{"input": "input1", "output": "output1"}, {"input": "input2", "output": "output2"}]
+  `;
 
-    const chatCompletion = await groq.chat.completions.create({
-      messages: [{ role: "user", content: prompt }],
-      model: "meta-llama/llama-4-scout-17b-16e-instruct",
-    });
+  // Try AI with 2 retry attempts (handles transient rate limits)
+  const models = ["qwen/qwen3.8-27b", "openai/gpt-oss-20b", "openai/gpt-oss-120b"];
+  let lastError = null;
 
-    const text = chatCompletion.choices[0].message.content;
-    let testCases = extractJSON(text);
+  for (const model of models) {
+    try {
+      console.log(`Trying model: ${model}`);
+      const chatCompletion = await groq.chat.completions.create({
+        messages: [{ role: "user", content: prompt }],
+        model,
+      });
 
-    if (!testCases) {
-      // Fallback: If AI fails JSON, return a dummy case so the UI doesn't break
-      testCases = [{ input: "5", output: "Please provide valid question." }];
+      const text = chatCompletion.choices[0].message.content;
+      let testCases = extractJSON(text);
+
+      if (testCases && testCases.length > 0) {
+        return res.json({ success: true, testCases });
+      }
+    } catch (e) {
+      console.error(`Model ${model} failed:`, e?.error?.message || e.message);
+      lastError = e;
+      // Small delay before trying next model
+      await new Promise(r => setTimeout(r, 500));
     }
-
-    res.json({ success: true, testCases });
-
-  } catch (e) {
-    console.error("Test Case Gen Error:", e);
-    res.status(500).json({ message: "Failed to generate test cases" });
   }
+
+  // All AI models failed — return smart placeholder test cases so UI doesn't break
+  console.error("All AI models exhausted. Returning placeholder test cases. Last error:", lastError?.message);
+  const fallbackTestCases = [
+    { input: "sample_input_1", output: "expected_output_1" },
+    { input: "sample_input_2", output: "expected_output_2" },
+    { input: "sample_input_3", output: "expected_output_3" },
+  ];
+  return res.json({
+    success: true,
+    testCases: fallbackTestCases,
+    warning: "AI quota exceeded. Placeholder test cases added — please edit them manually."
+  });
 };
 
 const getAllStudentResults = async (req, res) => {

@@ -43,11 +43,26 @@ const TakeExam = () => {
     const [securityModalMessage, setSecurityModalMessage] = useState("");
     const [violationLogs, setViolationLogs] = useState([]);
     const [isFocusLost, setIsFocusLost] = useState(false);
+    const [mobileCodingTab, setMobileCodingTab] = useState('question');
+    const [isMobileScreen, setIsMobileScreen] = useState(window.innerWidth < 768);
+
+    useEffect(() => {
+        const handleResize = () => setIsMobileScreen(window.innerWidth < 768);
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
 
     // REF
     const answersRef = useRef(answers);
     useEffect(() => { answersRef.current = answers; }, [answers]);
     const startedAtRef = useRef(null);
+    const cachedDeviceSecurityRef = useRef(null);
+    const gracePeriodRef = useRef(false);
+
+    // Pre-Exam Readiness & Permissions State
+    const [cameraReady, setCameraReady] = useState(false);
+    const [cameraCheckLoading, setCameraCheckLoading] = useState(false);
+    const [cameraErrorNotice, setCameraErrorNotice] = useState(null);
 
     const MAX_WARNINGS = 2;
 
@@ -76,6 +91,37 @@ const TakeExam = () => {
         fetchExam();
     }, [id, navigate]);
 
+    // Pre-check camera permission on mount
+    useEffect(() => {
+        if (exam?.cameraMonitoring && navigator.mediaDevices?.getUserMedia) {
+            if (navigator.permissions && navigator.permissions.query) {
+                navigator.permissions.query({ name: 'camera' })
+                    .then((status) => {
+                        if (status.state === 'granted') setCameraReady(true);
+                        status.onchange = () => setCameraReady(status.state === 'granted');
+                    })
+                    .catch(() => {});
+            }
+        }
+    }, [exam]);
+
+    const requestCameraPermission = async () => {
+        setCameraCheckLoading(true);
+        setCameraErrorNotice(null);
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({
+                video: { facingMode: 'user', width: { ideal: 480 }, height: { ideal: 360 } }
+            });
+            stream.getTracks().forEach(track => track.stop());
+            setCameraReady(true);
+        } catch (err) {
+            console.warn("Camera permission request failed:", err);
+            setCameraErrorNotice("Please allow camera permission in your browser to proceed.");
+        } finally {
+            setCameraCheckLoading(false);
+        }
+    };
+
     // 2. TIMER
     useEffect(() => {
         if (timeLeft <= 0 || !isExamStarted) return;
@@ -85,8 +131,8 @@ const TakeExam = () => {
 
     // --- SECURITY LOGIC ---
     const logViolation = async (action, details) => {
-        // GUARD: Only log if exam is strictly active and not in process of submitting or finished
-        if (!isExamStarted || isSubmitting || showSuccessModal || showTerminationModal) return;
+        // GUARD: Only log if exam is strictly active, grace period expired, and not in process of submitting or finished
+        if (!isExamStarted || gracePeriodRef.current || isSubmitting || showSuccessModal || showTerminationModal) return;
 
         try {
             const token = sessionStorage.getItem('token');
@@ -143,6 +189,12 @@ const TakeExam = () => {
     const handleSecurityViolation = useCallback(async (type, details = "") => {
         if (showTerminationModal || isSubmitting) return;
 
+        // GRACE PERIOD IMMUNITY: Suppress violations during exam initialization/permission requests
+        if (gracePeriodRef.current) {
+            console.log("🛡️ Suppressed violation during startup grace period:", type, details);
+            return;
+        }
+
         // PRE-EXAM MODE: Alert but NO logging, No count increase
         if (!isExamStarted) {
             safeAlert("PRE-EXAM SECURITY CHECK", `${type} detected.\n\n${details}\n\nPlease resolve this issue (close VM or disconnect extra monitors) to proceed.`);
@@ -164,6 +216,10 @@ const TakeExam = () => {
     }, [violationCount, showTerminationModal, isSubmitting, id, isExamStarted]);
 
     const checkDeviceIntegrity = useCallback(() => {
+        if (window.innerWidth < 768) return true; // Mobile phones and tablets are not desktop VMs
+        if (cachedDeviceSecurityRef.current !== null) {
+            return cachedDeviceSecurityRef.current;
+        }
         try {
             const canvas = document.createElement('canvas');
             const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
@@ -174,32 +230,28 @@ const TakeExam = () => {
                     const vmKeywords = ['virtualbox', 'vmware', 'vm-graphics', 'swiftshader', 'llvmpipe', 'parallel', 'qemu', 'google cloud'];
                     if (vmKeywords.some(key => renderer.includes(key))) {
                         handleSecurityViolation("VM_DETECTED");
+                        cachedDeviceSecurityRef.current = false;
+                        gl.getExtension('WEBGL_lose_context')?.loseContext();
                         return false;
                     }
                 }
+                gl.getExtension('WEBGL_lose_context')?.loseContext();
             }
+            cachedDeviceSecurityRef.current = true;
             return true;
-        } catch (e) { return true; }
+        } catch (e) { 
+            cachedDeviceSecurityRef.current = true;
+            return true; 
+        }
     }, [handleSecurityViolation]);
 
-    const checkScreenConfiguration = useCallback(async () => {
+    const checkScreenConfiguration = useCallback(() => {
+        if (window.innerWidth < 768) return true; // Mobile devices don't have secondary extended monitors
         try {
-            // Priority 1: Modern Multi-Screen Window Management API
-            if ('getScreenDetails' in window) {
-                const details = await window.getScreenDetails();
-                if (details.screens.length > 1) {
-                    handleSecurityViolation("MULTI_MONITOR_DETECTED");
-                    return false;
-                }
-            } 
-            // Priority 2: Simple Screen Extended check (Chrome 100+)
-            else if (window.screen.isExtended) {
-                handleSecurityViolation("MULTI_MONITOR_DETECTED");
+            // Check without intrusive permission popups using standard Screen Extended API
+            if (window.screen && window.screen.isExtended) {
+                handleSecurityViolation("MULTI_MONITOR_DETECTED", "Secondary external display detected. Please disconnect extra monitors.");
                 return false;
-            }
-            // Priority 3: Geometry heuristic (Fallback)
-            else if (window.screen.width > window.innerWidth * 1.5 && !window.screen.isExtended) {
-                 // handleSecurityViolation("SCREEN_SPANNING_DETECTED");
             }
             return true;
         } catch (e) { return true; }
@@ -207,37 +259,47 @@ const TakeExam = () => {
 
     // 3. CONTINUOUS SECURITY MONITORING & PROTECTION
     useEffect(() => {
-        let screenDetails = null;
-        let integrityInterval = setInterval(checkDeviceIntegrity, 10000); // Check VM every 10s
+        let integrityInterval = setInterval(checkDeviceIntegrity, 15000); // Check VM with cache every 15s
 
         // Anti-Screen-Capture Monkey-patch (Detects if student tries to use browser recording)
         if (navigator.mediaDevices && navigator.mediaDevices.getDisplayMedia) {
-            const originalGetDisplayMedia = navigator.mediaDevices.getDisplayMedia;
             navigator.mediaDevices.getDisplayMedia = function() {
                 handleSilentSecurityAlert("SCREEN CAPTURE BLOCKED", "Browser-based screen recording or sharing is strictly prohibited.");
                 return Promise.reject(new Error("Screen capture is disabled for security reasons."));
             };
         }
 
-        const setupScreenMonitoring = async () => {
-            if ('getScreenDetails' in window) {
-                try {
-                    screenDetails = await window.getScreenDetails();
-                    screenDetails.onscreenchange = () => {
-                        if (screenDetails.screens.length > 1) handleSecurityViolation("MULTI_MONITOR_DETECTED");
-                    };
-                } catch (e) { }
+        // Screen change listener without prompting permission popups
+        const handleScreenChange = () => {
+            if (window.innerWidth >= 768 && window.screen && window.screen.isExtended) {
+                handleSecurityViolation("MULTI_MONITOR_DETECTED", "External display connected during exam.");
             }
         };
-        setupScreenMonitoring();
+        if (window.screen && window.screen.addEventListener) {
+            window.screen.addEventListener('change', handleScreenChange);
+        }
 
-        // Aggressive Focus Polling (Every 100ms) - CAUTION: Higher frequency to catch fast OS overlays
+        // Focus Polling (250ms) - Balances fast reaction to OS overlays with CPU efficiency
         const focusPollInterval = setInterval(() => {
-            // Check all guards including modal states
-            if (!isExamStarted || isSubmitting || showSuccessModal || showTerminationModal) return;
+            // Check all guards including modal states and startup grace period
+            if (!isExamStarted || gracePeriodRef.current || isSubmitting || showSuccessModal || showTerminationModal) return;
             
+            const isMobile = window.innerWidth < 768;
             const hasFocus = document.hasFocus();
             const isTabActive = !document.hidden;
+            const isTyping = document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA');
+
+            if (isMobile) {
+                // On mobile: if app is switched OR if focus is lost while not typing (e.g. Gemini, Hey Google, pulling down notification drawer)
+                const overlayOrLoss = document.hidden || (!hasFocus && !isTyping);
+                if (overlayOrLoss && !isFocusLost) {
+                    setIsFocusLost(true);
+                    logViolation("AGGRESSIVE_FOCUS_LOSS_DETECTED", "Assistant overlay (Hey Google/Gemini) or notification panel opened.");
+                } else if (!overlayOrLoss && isFocusLost) {
+                    setIsFocusLost(false);
+                }
+                return;
+            }
 
             if ((!hasFocus || !isTabActive) && !isFocusLost) {
                 setIsFocusLost(true);
@@ -245,42 +307,64 @@ const TakeExam = () => {
             } else if (hasFocus && isTabActive && isFocusLost) {
                 setIsFocusLost(false);
             }
-        }, 100);
+        }, 250);
 
         return () => {
             clearInterval(integrityInterval);
             clearInterval(focusPollInterval);
-            if (screenDetails) screenDetails.onscreenchange = null;
+            if (window.screen && window.screen.removeEventListener) {
+                window.screen.removeEventListener('change', handleScreenChange);
+            }
         };
     }, [handleSecurityViolation, checkDeviceIntegrity, isExamStarted, isFocusLost, isSubmitting, showSuccessModal, showTerminationModal]);
 
-    const requestFullScreen = () => {
+    const triggerFullScreen = () => {
+        // Activate 10-second immunity grace period for clean permissions and initialization
+        gracePeriodRef.current = true;
+        setTimeout(() => {
+            gracePeriodRef.current = false;
+        }, 10000);
+
+        // Immediately and synchronously start exam mode so mobile never gets stuck
+        setIsExamStarted(true);
+        setIsFullScreen(true);
+
+        const sessionKey = `startedAt_${id}`;
+        let startTime = sessionStorage.getItem(sessionKey);
+        if (!startTime) {
+            startTime = new Date().toISOString();
+            sessionStorage.setItem(sessionKey, startTime);
+        }
+        startedAtRef.current = startTime;
+
         const elem = document.documentElement;
-        if (elem.requestFullscreen) {
-            elem.requestFullscreen()
-                .then(() => {
-                    setIsFullScreen(true);
-                    setIsExamStarted(true);
-                    
-                    // SECURITY FIX: Persist start time in sessionStorage to survive page refreshes
-                    const sessionKey = `startedAt_${id}`;
-                    let startTime = sessionStorage.getItem(sessionKey);
-                    if (!startTime) {
-                        startTime = new Date().toISOString();
-                        sessionStorage.setItem(sessionKey, startTime);
-                    }
-                    startedAtRef.current = startTime;
-                })
-                .catch(() => { });
+        const requestMethod = elem.requestFullscreen || elem.webkitRequestFullscreen || elem.mozRequestFullScreen || elem.msRequestFullscreen;
+
+        if (requestMethod) {
+            try {
+                const res = requestMethod.call(elem);
+                if (res && typeof res.then === 'function') {
+                    res.catch((err) => {
+                        console.warn("Fullscreen request error, viewport fullscreen mode active:", err);
+                    });
+                }
+            } catch (e) {
+                console.warn("Fullscreen API call error:", e);
+            }
         }
     };
 
-    const enterFullScreen = async () => {
+    const enterFullScreen = () => {
         const isDeviceSecure = checkDeviceIntegrity();
-        const isScreenSecure = await checkScreenConfiguration();
+        if (!isDeviceSecure) return;
 
-        if (!isDeviceSecure || !isScreenSecure) return;
-        requestFullScreen();
+        if (window.innerWidth >= 768) {
+            const isScreenSecure = checkScreenConfiguration();
+            if (!isScreenSecure) return;
+        }
+
+        // Call synchronously within user click event to preserve user gesture activation on mobile
+        triggerFullScreen();
     };
 
     useEffect(() => {
@@ -296,18 +380,42 @@ const TakeExam = () => {
         window.history.pushState(null, null, window.location.href);
         window.addEventListener('popstate', handleBackButton);
 
-        const handleVisibility = () => { if (document.hidden) handleSecurityViolation("TAB_SWITCH"); };
+        const handleVisibility = () => { 
+            if (gracePeriodRef.current) return;
+            if (document.hidden) handleSecurityViolation("TAB_SWITCH"); 
+        };
 
         const handleFS = () => {
-            if (!document.fullscreenElement && !showTerminationModal) {
-                setIsFullScreen(false);
-                handleSecurityViolation("EXIT_FULL_SCREEN");
+            // Mobile devices operate inside a fixed viewport; ignore native fullscreen toggles on mobile
+            if (window.innerWidth < 768) return;
+
+            const isFS = !!(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement);
+            if (!isFS && !showTerminationModal) {
+                if (!gracePeriodRef.current && isExamStarted) {
+                    setIsFullScreen(false);
+                    handleSecurityViolation("EXIT_FULL_SCREEN", "Exited full-screen mode.");
+                }
             } else {
                 setIsFullScreen(true);
             }
         };
 
         const handleFocusBlur = () => {
+            if (gracePeriodRef.current) return;
+            const isTyping = document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA');
+            if (window.innerWidth < 768) {
+                // If focus is lost while not typing (e.g. Gemini voice assistant popup, notification drawer pulled down)
+                if (document.hidden || !isTyping) {
+                    setIsFocusLost(true);
+                    if (isExamStarted) {
+                        logViolation("SCREENSHOT_RECOVERY_ATTEMPT", "App switched, assistant overlay (Gemini/Google), or notification panel opened.");
+                    }
+                } else {
+                    setIsFocusLost(false);
+                }
+                return;
+            }
+
             if (document.hidden || !document.hasFocus()) {
                 setIsFocusLost(true);
                 if (isExamStarted) {
@@ -318,7 +426,12 @@ const TakeExam = () => {
             }
         };
 
-        const handlePointerLeave = () => {
+        const handlePointerLeave = (e) => {
+            if (gracePeriodRef.current) return;
+            // CRITICAL FIX: Only trigger for desktop mouse pointer. Never trigger for touch/mobile!
+            if (window.innerWidth < 768) return;
+            if (e.pointerType && e.pointerType !== 'mouse') return;
+
             if (isExamStarted) {
                 setIsFocusLost(true);
                 logViolation("POINTER_EXIT_DETECTED", "Mouse left the window - possible OS screenshot tool selection.");
@@ -326,10 +439,21 @@ const TakeExam = () => {
         };
 
         const handleSelectionChange = () => {
-            // Only clear if not in an input/textarea (to allow typing)
+            // Do NOT wipe selection on mobile or when typing inside input/textarea
+            if (window.innerWidth < 768) return;
             const activeElement = document.activeElement;
-            if (isExamStarted && activeElement.tagName !== 'INPUT' && activeElement.tagName !== 'TEXTAREA') {
-                window.getSelection().removeAllRanges();
+            if (activeElement && (activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA' || activeElement.isContentEditable)) {
+                return;
+            }
+            if (isExamStarted) {
+                window.getSelection()?.removeAllRanges();
+            }
+        };
+
+        const handleTouchRecovery = () => {
+            // Touch restores view if blurred
+            if (isFocusLost && !document.hidden) {
+                setIsFocusLost(false);
             }
         };
 
@@ -388,10 +512,7 @@ const TakeExam = () => {
             }
 
             // Block Ctrl+V (Paste), Ctrl+C (Copy), Ctrl+X (Cut)
-            // Note: We allow these in the Monaco editor if needed, 
-            // but the global paste event will still be blocked.
             if (e.ctrlKey && (e.keyCode === 86 || e.keyCode === 67 || e.keyCode === 88)) {
-                // If not in an input/textarea/editor, block it
                 const isInput = e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.closest('.monaco-editor');
                 if (!isInput) {
                     e.preventDefault();
@@ -423,6 +544,7 @@ const TakeExam = () => {
         window.addEventListener('blur', handleFocusBlur);
         window.addEventListener('focus', handleFocusBlur);
         document.addEventListener('pointerleave', handlePointerLeave);
+        document.addEventListener('touchstart', handleTouchRecovery, { passive: true });
         document.addEventListener('selectionchange', handleSelectionChange);
         document.addEventListener('copy', handleClipboard, true);
         document.addEventListener('cut', handleClipboard, true);
@@ -438,6 +560,7 @@ const TakeExam = () => {
             window.removeEventListener('blur', handleFocusBlur);
             window.removeEventListener('focus', handleFocusBlur);
             document.removeEventListener('pointerleave', handlePointerLeave);
+            document.removeEventListener('touchstart', handleTouchRecovery);
             document.removeEventListener('selectionchange', handleSelectionChange);
             document.removeEventListener('copy', handleClipboard, true);
             document.removeEventListener('cut', handleClipboard, true);
@@ -614,17 +737,57 @@ const TakeExam = () => {
         </div>
     );
 
-    if (!isFullScreen) return (
-        <div className="position-fixed top-0 start-0 w-100 h-100 bg-gradient-dark d-flex flex-column align-items-center justify-content-center text-white text-center p-4 z-3 animate-fade-in" data-bs-theme="dark">
-            <div className="card glass-panel border-danger border-opacity-25 shadow-lg w-100 animate-slide-up" style={{ maxWidth: '500px' }}>
-                <div className="card-body p-5">
-                    <ShieldAlert size={64} className="mb-4 text-danger d-block mx-auto" />
-                    <h2 className="h4 fw-bold mb-3 text-white">Secure Environment Required</h2>
+    if (!isExamStarted) return (
+        <div className="position-fixed top-0 start-0 w-100 h-100 bg-gradient-dark d-flex flex-column align-items-center justify-content-center text-white text-center p-3 p-md-4 z-3 animate-fade-in" data-bs-theme="dark">
+            <div className="card glass-panel border-danger border-opacity-25 shadow-lg w-100 animate-slide-up" style={{ maxWidth: '520px' }}>
+                <div className="card-body p-4 p-md-5">
+                    <ShieldAlert size={56} className="mb-3 text-danger d-block mx-auto" />
+                    <h2 className="h4 fw-bold mb-2 text-white">Secure Environment Required</h2>
                     <p className="text-white-50 mb-4 small">
-                        GuardXLens requires full-screen mode to ensure exam integrity. Exiting full-screen is recorded as a violation.
+                        GuardXLens enforces a secure full-screen testing environment. Exiting full-screen or switching apps will be flagged as malpractice.
                     </p>
-                    <button onClick={enterFullScreen} className="btn btn-danger w-100 fw-bold d-flex align-items-center justify-content-center gap-2 shadow-lg btn-hover-scale">
-                        <Maximize2 size={18} /> Enter Secure Mode
+
+                    {/* Camera Permission Verification (if camera proctoring enabled) */}
+                    {exam?.cameraMonitoring && (
+                        <div className="p-3 mb-4 rounded bg-white bg-opacity-5 border border-white border-opacity-10 text-start">
+                            <div className="d-flex align-items-center justify-content-between mb-2">
+                                <span className="small fw-bold text-white d-flex align-items-center gap-2">
+                                    📷 Camera Proctoring
+                                </span>
+                                <span className={`badge ${cameraReady ? 'bg-success' : 'bg-warning text-dark'}`}>
+                                    {cameraReady ? 'Ready' : 'Permission Required'}
+                                </span>
+                            </div>
+                            {cameraReady ? (
+                                <p className="text-success small mb-0 fw-semibold">
+                                    ✓ Camera permission granted. Ready for live proctoring.
+                                </p>
+                            ) : (
+                                <>
+                                    <p className="text-white-50 small mb-2">
+                                        Please allow camera access so proctoring initializes smoothly without interrupting your exam.
+                                    </p>
+                                    {cameraErrorNotice && (
+                                        <div className="alert alert-danger py-1 px-2 small mb-2">{cameraErrorNotice}</div>
+                                    )}
+                                    <button 
+                                        type="button"
+                                        onClick={requestCameraPermission} 
+                                        disabled={cameraCheckLoading}
+                                        className="btn btn-outline-warning btn-sm w-100 fw-bold py-2"
+                                    >
+                                        {cameraCheckLoading ? "Checking Camera Access..." : "Grant Camera Access Now"}
+                                    </button>
+                                </>
+                            )}
+                        </div>
+                    )}
+
+                    <button 
+                        onClick={enterFullScreen} 
+                        className="btn btn-danger w-100 fw-bold d-flex align-items-center justify-content-center gap-2 shadow-lg btn-hover-scale py-2"
+                    >
+                        <Maximize2 size={18} /> Enter Exam Mode
                     </button>
                 </div>
             </div>
@@ -633,7 +796,7 @@ const TakeExam = () => {
 
     // --- MAIN EXAM UI ---
     return (
-        <div className={`vh-100 d-flex flex-column bg-gradient-dark font-sans overflow-hidden text-light animate-fade-in ${isFocusLost ? 'screenshot-protected' : ''}`} data-bs-theme="dark" style={{ background: 'radial-gradient(circle at top right, #1e293b, #0f172a)', userSelect: 'none', WebkitUserSelect: 'none', MozUserSelect: 'none', msUserSelect: 'none' }}>
+        <div className={`vh-100 d-flex flex-column bg-gradient-dark font-sans overflow-hidden text-light animate-fade-in ${isFocusLost ? 'screenshot-protected' : ''}`} data-bs-theme="dark" style={{ background: 'radial-gradient(circle at top right, #1e293b, #0f172a)', userSelect: isMobileScreen ? 'auto' : 'none', WebkitUserSelect: isMobileScreen ? 'auto' : 'none' }}>
             {/* Security Watermark */}
             <div className="security-watermark"></div>
 
@@ -677,6 +840,26 @@ const TakeExam = () => {
                 </div>
             </nav>
 
+            {/* MOBILE CODING TAB BAR (Only on mobile when coding) */}
+            {isCoding && (
+                <div className="d-flex d-md-none bg-dark border-bottom border-white border-opacity-10 p-1">
+                    <button
+                        type="button"
+                        onClick={() => setMobileCodingTab('question')}
+                        className={`btn btn-sm flex-grow-1 fw-bold ${mobileCodingTab === 'question' ? 'btn-primary' : 'btn-dark text-white-50'}`}
+                    >
+                        📝 Question
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => setMobileCodingTab('editor')}
+                        className={`btn btn-sm flex-grow-1 fw-bold ${mobileCodingTab === 'editor' ? 'btn-primary' : 'btn-dark text-white-50'}`}
+                    >
+                        💻 Code & Run ({selectedLanguage.toUpperCase()})
+                    </button>
+                </div>
+            )}
+
             {/* 2. MAIN CONTENT AREA */}
             <div className="flex-grow-1 d-flex overflow-hidden">
 
@@ -711,7 +894,7 @@ const TakeExam = () => {
                 <div className="flex-grow-1 d-flex flex-column flex-md-row overflow-hidden bg-transparent">
 
                     {/* LEFT PANEL: Question Text & Options */}
-                    <div className={`d-flex flex-column overflow-auto p-4 custom-scrollbar ${isCoding ? 'col-md-5 border-end border-white border-opacity-10' : 'col-12 col-lg-8 mx-auto'}`}>
+                    <div className={`flex-column overflow-auto p-4 custom-scrollbar ${isCoding ? `${mobileCodingTab === 'editor' ? 'd-none d-md-flex' : 'd-flex'} col-md-5 border-end border-white border-opacity-10` : 'd-flex col-12 col-lg-8 mx-auto'}`}>
                         {/* Mobile Toggle for Palette */}
                         <button className={`btn btn-outline-light border-opacity-25 mb-3 w-100 ${isCoding ? '' : 'd-md-none'}`} onClick={() => setShowQuestionPalette(true)}>
                             <Menu size={16} className="me-2" /> View Question Map
@@ -764,7 +947,7 @@ const TakeExam = () => {
                                     placeholder="Type your answer here..."
                                     value={answers[currentQ._id] || ''}
                                     onChange={(e) => handleAnswerChange(e.target.value)}
-                                    style={{ resize: 'none' }}
+                                    style={{ resize: 'none', userSelect: 'text', WebkitUserSelect: 'text' }}
                                 ></textarea>
                             </div>
                         )}
@@ -790,7 +973,7 @@ const TakeExam = () => {
 
                     {/* RIGHT PANEL: Coding Editor (If Code) */}
                     {isCoding && (
-                        <div className="col-md-7 d-flex flex-column h-100 bg-black text-white p-0 border-start border-white border-opacity-10">
+                        <div className={`col-md-7 flex-column h-100 bg-black text-white p-0 border-start border-white border-opacity-10 ${mobileCodingTab === 'question' ? 'd-none d-md-flex' : 'd-flex'}`}>
                             {/* Toolbar */}
                             <div className="p-2 border-bottom border-white border-opacity-10 d-flex justify-content-between align-items-center glass-panel">
                                 <select
@@ -808,24 +991,69 @@ const TakeExam = () => {
                                 </button>
                             </div>
 
-                            {/* Editor */}
-                            <div className="flex-grow-1">
-                                <Editor
-                                    height="100%"
-                                    theme="vs-dark"
-                                    language={selectedLanguage === 'c' ? 'cpp' : selectedLanguage}
-                                    value={answers[currentQ._id] || ""}
-                                    onChange={(val) => handleAnswerChange(val)}
-                                    onMount={handleEditorDidMount}
-                                    options={{
-                                        minimap: { enabled: false },
-                                        fontSize: 13,
-                                        scrollBeyondLastLine: false,
-                                        contextmenu: false, // Disable editor context menu
-                                        pasteAsHtml: false
-                                    }}
-                                    loading={<div className="text-secondary p-3">Loading Editor...</div>}
-                                />
+                            {/* Editor Area (Native Textarea on Mobile for 100% Keyboard Support, Monaco on Desktop) */}
+                            <div className="flex-grow-1 position-relative d-flex flex-column">
+                                {isMobileScreen ? (
+                                    <div className="flex-grow-1 d-flex flex-column bg-black p-2 position-relative" style={{ minHeight: '260px' }}>
+                                        <textarea
+                                            className="form-control bg-black text-light font-monospace border-0 p-3 flex-grow-1 custom-scrollbar"
+                                            style={{
+                                                fontSize: '14px',
+                                                lineHeight: '1.6',
+                                                fontFamily: 'Consolas, "Fira Code", Monaco, monospace',
+                                                resize: 'none',
+                                                caretColor: '#38bdf8',
+                                                userSelect: 'text',
+                                                WebkitUserSelect: 'text',
+                                                outline: 'none',
+                                                boxShadow: 'none',
+                                                minHeight: '200px'
+                                            }}
+                                            value={answers[currentQ._id] || ""}
+                                            onChange={(e) => handleAnswerChange(e.target.value)}
+                                            placeholder="Type your code here..."
+                                            autoCapitalize="none"
+                                            autoCorrect="off"
+                                            autoComplete="off"
+                                            spellCheck="false"
+                                        />
+                                        {/* Mobile Programmer Keys Helper */}
+                                        <div className="d-flex gap-1 overflow-x-auto p-1 bg-dark bg-opacity-75 border-top border-white border-opacity-10">
+                                            {['Tab', '{', '}', '(', ')', '[', ']', ';', '=', ':', '"', '<', '>', '+', '-', '*'].map(char => (
+                                                <button
+                                                    key={char}
+                                                    type="button"
+                                                    className="btn btn-sm btn-outline-secondary text-white px-2 py-0 font-monospace"
+                                                    style={{ minWidth: '32px', fontSize: '13px' }}
+                                                    onClick={() => {
+                                                        const insert = char === 'Tab' ? '  ' : char;
+                                                        const currentVal = answers[currentQ._id] || "";
+                                                        handleAnswerChange(currentVal + insert);
+                                                    }}
+                                                >
+                                                    {char}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <Editor
+                                        height="100%"
+                                        theme="vs-dark"
+                                        language={selectedLanguage === 'c' ? 'cpp' : selectedLanguage}
+                                        value={answers[currentQ._id] || ""}
+                                        onChange={(val) => handleAnswerChange(val)}
+                                        onMount={handleEditorDidMount}
+                                        options={{
+                                            minimap: { enabled: false },
+                                            fontSize: 13,
+                                            scrollBeyondLastLine: false,
+                                            contextmenu: false,
+                                            pasteAsHtml: false
+                                        }}
+                                        loading={<div className="text-secondary p-3">Loading Editor...</div>}
+                                    />
+                                )}
                             </div>
 
                             {/* Console */}
