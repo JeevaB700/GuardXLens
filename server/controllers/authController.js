@@ -415,6 +415,38 @@ const createDefaultAdmin = async () => {
   } catch (error) { console.error("Error creating admin:", error); }
 };
 
+// 10.5 UPDATE STUDENT DETAILS (Institution/Admin)
+const updateStudent = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, email, registerNumber, department, year, semester, section } = req.body;
+
+    const student = await User.findById(id);
+    if (!student || student.role !== 'student') {
+      return res.status(404).json({ message: "Student not found" });
+    }
+
+    if (req.user.role === 'institution' && student.institutionId?.toString() !== req.user.institutionId?.toString()) {
+      return res.status(403).json({ message: "Unauthorized to update this student" });
+    }
+
+    if (name) student.name = name;
+    if (email) student.email = email;
+    if (registerNumber !== undefined) student.registerNumber = registerNumber;
+    if (department !== undefined) student.department = department ? department.trim().toUpperCase() : '';
+    if (year !== undefined) student.year = Number(year);
+    if (semester !== undefined) student.semester = Number(semester);
+    if (section !== undefined) student.section = section;
+
+    await student.save();
+
+    res.json({ success: true, message: "Student details updated successfully", student });
+  } catch (error) {
+    console.error("Error updating student:", error);
+    res.status(500).json({ message: "Failed to update student details" });
+  }
+};
+
 // 11. DELETE STUDENT (Admin/Institution Only)
 const deleteStudent = async (req, res) => {
   try {
@@ -522,6 +554,7 @@ module.exports = {
   approveInstitution,
   rejectInstitution,
   deleteStudent,
+  updateStudent,
   deleteInstitution,
   adminCreateStudent
 };

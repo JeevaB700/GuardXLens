@@ -29,6 +29,7 @@ import EditExam from './pages/Institution/EditExam';
 import ActiveExams from './pages/Institution/ActiveExams';
 import AdminResultView from './pages/Institution/AdminResultView';
 import InstitutionExamResults from './pages/Institution/InstitutionExamResults';
+import ExamCellManagement from './pages/Institution/ExamCellManagement';
 
 // --- PAGES: STUDENT ---
 import StudentDashboard from './pages/student/StudentDashboard';
@@ -78,6 +79,7 @@ function App() {
                     <Route path="create-exam" element={<CreateExam />} />
                     <Route path="edit-exam/:id" element={<EditExam />} />
                     <Route path="students" element={<InstitutionStudents />} />
+                    <Route path="exam-cell" element={<ExamCellManagement />} />
                     <Route path="result-view/:studentId/:resultId" element={<AdminResultView />} />
                     <Route path="exam-results/:examId" element={<InstitutionExamResults />} />
                     <Route index element={<Navigate to="dashboard" replace />} />

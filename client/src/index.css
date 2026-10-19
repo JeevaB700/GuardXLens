@@ -1002,3 +1002,47 @@ body:not(.exam-page) .bg-gradient-dark::before {
 .group:hover .group-hover-block { display: block !important; }
 .group:hover .group-hover-flex { display: flex !important; }
 .group:hover .group-hover-inline-block { display: inline-block !important; }
+
+/* ========== GLOBAL PRINT OPTIMIZATION ========== */
+@media print {
+  *, *::before, *::after {
+    animation: none !important;
+    transition: none !important;
+    opacity: 1 !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+  html, body, #root, #root > div, .vh-100, main, .overflow-hidden, .overflow-auto {
+    height: auto !important;
+    min-height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    position: static !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    display: block !important;
+    opacity: 1 !important;
+  }
+  .d-print-none, header, aside, .sidebar-nav-item, nav, .cyber-grid-container, .btn, .offcanvas {
+    display: none !important;
+  }
+  #printable-official-area {
+    display: block !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  .official-print-page {
+    box-shadow: none !important;
+    border: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+}

@@ -38,6 +38,8 @@ const examSchema = new mongoose.Schema({
     required: true
   },
   cameraMonitoring: { type: Boolean, default: true },
+  // Target Department ('ALL', 'IT', 'CSE', 'ECE', 'MECH', 'EEE', 'AIDS', etc.)
+  department: { type: String, default: 'ALL' },
   // -------------------------------------------
 
   createdAt: { type: Date, default: Date.now }

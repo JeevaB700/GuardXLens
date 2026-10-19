@@ -43,6 +43,7 @@ connectDB().then(() => {
 app.use('/api/admin', adminRoutes);
 app.use('/api/student', studentRoutes);
 app.use('/api/auth', authRoutes);
+app.use('/api/exam-cell', require('./routes/examCellRoutes'));
 app.post('/api/log', protect, logActivity);  // Student logs violation
 app.get('/api/admin/logs', getLogs);         // Admin views logs
 

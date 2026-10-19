@@ -9,6 +9,7 @@ const StudentDashboard = () => {
     const [results, setResults] = useState([]);
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [examTab, setExamTab] = useState('new'); // 'new' | 'completed' | 'expired' | 'all'
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -156,117 +157,189 @@ const StudentDashboard = () => {
 
                     {/* ======= EXAM GRID ======= */}
                     <div className="col-lg-8">
-                        <div className="d-flex align-items-center justify-content-between mb-4">
+                        {/* Segregation Tabs Header */}
+                        <div className="d-flex flex-column flex-sm-row align-items-start align-items-sm-center justify-content-between gap-3 mb-4">
                             <div className="d-flex align-items-center gap-2">
                                 <div style={{ width: '3px', height: '18px', background: 'linear-gradient(to bottom, var(--gx-neon), transparent)', borderRadius: '2px' }} />
-                                <h2 style={{ fontSize: '1.05rem', fontWeight: 700, color: '#f1f5f9', margin: 0 }}>Your Assessments</h2>
+                                <h2 style={{ fontSize: '1.05rem', fontWeight: 700, color: '#f1f5f9', margin: 0 }}>Assessments</h2>
                             </div>
-                            <span style={{ fontSize: '0.7rem', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.4)', padding: '3px 10px', borderRadius: '100px', fontWeight: 600 }}>
-                                {exams.length} total
-                            </span>
-                        </div>
 
-                        {exams.length === 0 ? (
-                            <div className="d-flex flex-column align-items-center justify-content-center py-5 text-center" style={{
-                                background: 'rgba(10,15,30,0.5)', border: '1px dashed rgba(255,255,255,0.08)', borderRadius: '16px', minHeight: '200px'
-                            }}>
-                                <Calendar size={40} style={{ color: 'rgba(255,255,255,0.15)', marginBottom: '12px' }} />
-                                <h5 style={{ color: 'rgba(255,255,255,0.3)', fontWeight: 600 }}>No exams yet</h5>
-                                <p style={{ color: 'rgba(255,255,255,0.18)', fontSize: '0.85rem' }}>Your institution hasn't published any exams.</p>
-                            </div>
-                        ) : (
-                            <div className="row g-3">
-                                {exams.map((exam, index) => {
-                                    const start = new Date(exam.startTime);
-                                    const end = new Date(exam.endTime);
-                                    let statusText = "Ready to start";
-                                    let isPlayable = true;
-                                    let statusColor = 'var(--gx-neon)';
-                                    let statusBg = 'rgba(132,204,22,0.1)';
-
-                                    if (exam.hasAttempted) {
-                                        statusText = "Already Attended";
-                                        isPlayable = false;
-                                        statusColor = '#22c55e';
-                                        statusBg = 'rgba(34,197,94,0.08)';
-                                    } else if (now < start) {
-                                        statusText = `Starts ${start.toLocaleString()}`;
-                                        isPlayable = false;
-                                        statusColor = 'rgba(255,255,255,0.3)';
-                                        statusBg = 'rgba(255,255,255,0.03)';
-                                    } else if (now > end) {
-                                        statusText = "Expired";
-                                        isPlayable = false;
-                                        statusColor = '#ef4444';
-                                        statusBg = 'rgba(239,68,68,0.08)';
-                                    } else {
-                                        statusText = `Ends ${end.toLocaleString()}`;
-                                    }
-
+                            {/* Status Filters */}
+                            <div className="d-flex align-items-center gap-1 p-1" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px' }}>
+                                {[
+                                    { id: 'new', label: 'Newly Assigned', count: exams.filter(e => !e.hasAttempted && new Date() <= new Date(e.endTime)).length, color: 'var(--gx-neon)' },
+                                    { id: 'completed', label: 'Completed', count: exams.filter(e => e.hasAttempted).length, color: '#22c55e' },
+                                    { id: 'expired', label: 'Expired', count: exams.filter(e => !e.hasAttempted && new Date() > new Date(e.endTime)).length, color: '#ef4444' },
+                                    { id: 'all', label: 'All', count: exams.length, color: '#06b6d4' }
+                                ].map(tab => {
+                                    const active = examTab === tab.id;
                                     return (
-                                        <div key={exam._id} className={`col-md-6 animate-slide-up stagger-${(index % 4) + 1}`}>
-                                            <div className="h-100 hover-lift glass-panel" style={{
-                                                borderRadius: '14px', padding: '20px',
-                                                display: 'flex', flexDirection: 'column',
-                                                transition: 'all 0.3s ease',
-                                                animationDelay: `${(index % 4) * 0.1}s`
+                                        <button
+                                            key={tab.id}
+                                            onClick={() => setExamTab(tab.id)}
+                                            className="btn btn-sm d-flex align-items-center gap-2 border-0"
+                                            style={{
+                                                background: active ? 'rgba(255,255,255,0.12)' : 'transparent',
+                                                color: active ? '#ffffff' : 'rgba(255,255,255,0.45)',
+                                                fontWeight: active ? 700 : 500,
+                                                fontSize: '0.75rem',
+                                                borderRadius: '8px',
+                                                padding: '5px 10px',
+                                                transition: 'all 0.2s ease'
+                                            }}
+                                        >
+                                            <span>{tab.label}</span>
+                                            <span style={{
+                                                fontSize: '0.65rem',
+                                                padding: '1px 6px',
+                                                borderRadius: '100px',
+                                                background: active ? tab.color : 'rgba(255,255,255,0.06)',
+                                                color: active ? '#000' : 'rgba(255,255,255,0.4)',
+                                                fontWeight: 800
                                             }}>
-                                                <div className="d-flex justify-content-between align-items-start mb-3">
-                                                    <span style={{
-                                                        fontSize: '0.65rem', fontWeight: 700,
-                                                        background: 'rgba(132,204,22,0.1)',
-                                                        color: 'var(--gx-neon)', border: '1px solid rgba(132,204,22,0.2)',
-                                                        padding: '2px 8px', borderRadius: '100px',
-                                                        textTransform: 'uppercase', letterSpacing: '0.08em',
-                                                    }}>{exam.subject || 'General'}</span>
-                                                    <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.2)', fontFamily: 'JetBrains Mono, monospace' }}>#{exam._id.slice(-4)}</span>
-                                                </div>
-
-                                                <h5 style={{ color: '#f1f5f9', fontWeight: 700, fontSize: '0.95rem', marginBottom: '8px' }}>{exam.title}</h5>
-
-                                                <div className="d-flex gap-3 mb-3" style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.35)' }}>
-                                                    <span><Clock size={11} style={{ marginRight: '4px' }} />{exam.duration} min</span>
-                                                    <span><FileText size={11} style={{ marginRight: '4px' }} />{exam.totalMarks} marks</span>
-                                                </div>
-
-                                                <div className="mb-3 px-2 py-1 d-flex align-items-center gap-2" style={{
-                                                    background: statusBg, borderRadius: '8px',
-                                                    fontSize: '0.72rem', color: statusColor, fontWeight: 500,
-                                                }}>
-                                                    <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: statusColor, flexShrink: 0, animation: isPlayable ? 'pulse 1.5s ease-in-out infinite' : 'none' }} />
-                                                    {statusText}
-                                                </div>
-
-                                                <div style={{ marginTop: 'auto' }}>
-                                                    <button
-                                                        disabled={!isPlayable}
-                                                        onClick={() => navigate(`/student/take-exam/${exam._id}`)}
-                                                        className="btn w-100 fw-semibold d-flex align-items-center justify-content-center gap-2"
-                                                        style={{
-                                                            borderRadius: '10px',
-                                                            fontSize: '0.85rem',
-                                                            background: isPlayable ? 'linear-gradient(135deg, var(--gx-neon), #a3e635)' : 'rgba(255,255,255,0.04)',
-                                                            color: isPlayable ? '#050a00' : 'rgba(255,255,255,0.25)',
-                                                            border: isPlayable ? 'none' : '1px solid rgba(255,255,255,0.07)',
-                                                            boxShadow: isPlayable ? '0 4px 20px rgba(132,204,22,0.3)' : 'none',
-                                                            transition: 'all 0.3s ease',
-                                                        }}
-                                                    >
-                                                        {exam.hasAttempted ? (
-                                                            <><CheckCircle size={15} /> Completed</>
-                                                        ) : isPlayable ? (
-                                                            <><Play size={15} fill="currentColor" /> Start Exam</>
-                                                        ) : (
-                                                            'Not Available'
-                                                        )}
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        </div>
+                                                {tab.count}
+                                            </span>
+                                        </button>
                                     );
                                 })}
                             </div>
-                        )}
+                        </div>
+
+                        {/* Filtered Exam List */}
+                        {(() => {
+                            const now = new Date();
+                            const newlyAssigned = exams.filter(e => !e.hasAttempted && now <= new Date(e.endTime));
+                            const completed = exams.filter(e => e.hasAttempted);
+                            const expired = exams.filter(e => !e.hasAttempted && now > new Date(e.endTime));
+
+                            let list = newlyAssigned;
+                            if (examTab === 'new') list = newlyAssigned;
+                            else if (examTab === 'completed') list = completed;
+                            else if (examTab === 'expired') list = expired;
+                            else if (examTab === 'all') list = exams;
+
+                            if (list.length === 0) {
+                                return (
+                                    <div className="d-flex flex-column align-items-center justify-content-center py-5 text-center" style={{
+                                        background: 'rgba(10,15,30,0.5)', border: '1px dashed rgba(255,255,255,0.08)', borderRadius: '16px', minHeight: '200px'
+                                    }}>
+                                        <Calendar size={40} style={{ color: 'rgba(255,255,255,0.15)', marginBottom: '12px' }} />
+                                        <h5 style={{ color: 'rgba(255,255,255,0.4)', fontWeight: 600 }}>
+                                            {examTab === 'new' ? 'No newly assigned tests right now' :
+                                             examTab === 'completed' ? 'No completed assessments yet' :
+                                             examTab === 'expired' ? 'No expired tests' : 'No tests found'}
+                                        </h5>
+                                        <p style={{ color: 'rgba(255,255,255,0.22)', fontSize: '0.85rem' }}>
+                                            {examTab === 'new' ? 'All caught up! Check back when your faculty publishes new exams.' : 'Your assessment history will appear here.'}
+                                        </p>
+                                    </div>
+                                );
+                            }
+
+                            return (
+                                <div className="row g-3">
+                                    {list.map((exam, index) => {
+                                        const start = new Date(exam.startTime);
+                                        const end = new Date(exam.endTime);
+                                        let statusText = "Ready to start";
+                                        let isPlayable = true;
+                                        let statusColor = 'var(--gx-neon)';
+                                        let statusBg = 'rgba(132,204,22,0.1)';
+
+                                        if (exam.hasAttempted) {
+                                            statusText = "Already Attended";
+                                            isPlayable = false;
+                                            statusColor = '#22c55e';
+                                            statusBg = 'rgba(34,197,94,0.08)';
+                                        } else if (now < start) {
+                                            statusText = `Starts ${start.toLocaleString()}`;
+                                            isPlayable = false;
+                                            statusColor = 'rgba(255,255,255,0.3)';
+                                            statusBg = 'rgba(255,255,255,0.03)';
+                                        } else if (now > end) {
+                                            statusText = "Expired";
+                                            isPlayable = false;
+                                            statusColor = '#ef4444';
+                                            statusBg = 'rgba(239,68,68,0.08)';
+                                        } else {
+                                            statusText = `Ends ${end.toLocaleString()}`;
+                                        }
+
+                                        return (
+                                            <div key={exam._id} className={`col-md-6 animate-slide-up stagger-${(index % 4) + 1}`}>
+                                                <div className="h-100 hover-lift glass-panel" style={{
+                                                    borderRadius: '14px', padding: '20px',
+                                                    display: 'flex', flexDirection: 'column',
+                                                    transition: 'all 0.3s ease',
+                                                    animationDelay: `${(index % 4) * 0.1}s`
+                                                }}>
+                                                    <div className="d-flex justify-content-between align-items-start mb-3">
+                                                        <div className="d-flex align-items-center gap-1 flex-wrap">
+                                                            <span style={{
+                                                                fontSize: '0.65rem', fontWeight: 700,
+                                                                background: 'rgba(132,204,22,0.1)',
+                                                                color: 'var(--gx-neon)', border: '1px solid rgba(132,204,22,0.2)',
+                                                                padding: '2px 8px', borderRadius: '100px',
+                                                                textTransform: 'uppercase', letterSpacing: '0.08em',
+                                                            }}>{exam.subject || 'General'}</span>
+                                                            {exam.department && exam.department !== 'ALL' && (
+                                                                <span style={{
+                                                                    fontSize: '0.65rem', fontWeight: 700,
+                                                                    background: 'rgba(6,182,212,0.1)',
+                                                                    color: '#06b6d4', border: '1px solid rgba(6,182,212,0.25)',
+                                                                    padding: '2px 8px', borderRadius: '100px',
+                                                                }}>{exam.department}</span>
+                                                            )}
+                                                        </div>
+                                                        <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.2)', fontFamily: 'JetBrains Mono, monospace' }}>#{exam._id.slice(-4)}</span>
+                                                    </div>
+
+                                                    <h5 style={{ color: '#f1f5f9', fontWeight: 700, fontSize: '0.95rem', marginBottom: '8px' }}>{exam.title}</h5>
+
+                                                    <div className="d-flex gap-3 mb-3" style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.35)' }}>
+                                                        <span><Clock size={11} style={{ marginRight: '4px' }} />{exam.duration} min</span>
+                                                        <span><FileText size={11} style={{ marginRight: '4px' }} />{exam.totalMarks} marks</span>
+                                                    </div>
+
+                                                    <div className="mb-3 px-2 py-1 d-flex align-items-center gap-2" style={{
+                                                        background: statusBg, borderRadius: '8px',
+                                                        fontSize: '0.72rem', color: statusColor, fontWeight: 500,
+                                                    }}>
+                                                        <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: statusColor, flexShrink: 0, animation: isPlayable ? 'pulse 1.5s ease-in-out infinite' : 'none' }} />
+                                                        {statusText}
+                                                    </div>
+
+                                                    <div style={{ marginTop: 'auto' }}>
+                                                        <button
+                                                            disabled={!isPlayable}
+                                                            onClick={() => navigate(`/student/take-exam/${exam._id}`)}
+                                                            className="btn w-100 fw-semibold d-flex align-items-center justify-content-center gap-2"
+                                                            style={{
+                                                                borderRadius: '10px',
+                                                                fontSize: '0.85rem',
+                                                                background: isPlayable ? 'linear-gradient(135deg, var(--gx-neon), #a3e635)' : 'rgba(255,255,255,0.04)',
+                                                                color: isPlayable ? '#050a00' : 'rgba(255,255,255,0.25)',
+                                                                border: isPlayable ? 'none' : '1px solid rgba(255,255,255,0.07)',
+                                                                boxShadow: isPlayable ? '0 4px 20px rgba(132,204,22,0.3)' : 'none',
+                                                                transition: 'all 0.3s ease',
+                                                            }}
+                                                        >
+                                                            {exam.hasAttempted ? (
+                                                                <><CheckCircle size={15} /> Completed</>
+                                                            ) : isPlayable ? (
+                                                                <><Play size={15} fill="currentColor" /> Start Exam</>
+                                                            ) : (
+                                                                'Not Available'
+                                                            )}
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            );
+                        })()}
                     </div>
 
                     {/* ======= RECENT ACTIVITY ======= */}

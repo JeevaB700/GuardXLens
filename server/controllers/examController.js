@@ -1,6 +1,7 @@
 const path = require('path'); // Added for extension checking
 const Exam = require('../models/Exam');
 const Result = require('../models/Result');
+const User = require('../models/User');
 const PDFParser = require("pdf2json");
 const mammoth = require("mammoth"); // Added for DOCX
 const Groq = require("groq-sdk");
@@ -123,7 +124,7 @@ const extractQuestions = async (req, res) => {
 // 2. SAVE EXAM
 const saveExam = async (req, res) => {
   try {
-    const { title, subject, duration, questions, startTime, endTime, passMarks, cameraMonitoring } = req.body;
+    const { title, subject, duration, questions, startTime, endTime, passMarks, cameraMonitoring, department } = req.body;
     const institutionId = req.user.institutionId;
 
     const totalMarks = questions.reduce((sum, q) => sum + (parseInt(q.marks) || 0), 0);
@@ -132,9 +133,9 @@ const saveExam = async (req, res) => {
       title, subject, duration, questions, totalMarks,
       startTime, endTime, passMarks,
       cameraMonitoring: cameraMonitoring !== undefined ? cameraMonitoring : true,
+      department: department ? department.trim().toUpperCase() : 'ALL',
       institutionId: institutionId || null
     });
-
 
     await newExam.save();
     res.status(201).json({ success: true, message: "Exam created!", examId: newExam._id });
@@ -149,21 +150,42 @@ const getExamsByInstitution = async (req, res) => {
     const institutionId = req.user.institutionId;
     const query = req.user.role === 'admin' ? {} : { institutionId };
 
-    const exams = await Exam.find(query).select('title subject duration totalMarks startTime endTime passMarks createdAt questions').sort({ createdAt: -1 });
+    const exams = await Exam.find(query).select('title subject department duration totalMarks startTime endTime passMarks createdAt questions').sort({ createdAt: -1 });
     res.json({ success: true, exams });
   } catch (error) {
     res.status(500).json({ message: "Error fetching exams" });
   }
 };
 
-// 4. GET ALL EXAMS (Student Dashboard - Filtered by Institution & Untaken)
+// 4. GET ALL EXAMS (Student Dashboard - Filtered by Institution & Department)
 const getAllExams = async (req, res) => {
   try {
     const studentId = req.user.id || req.user._id;
     const institutionId = req.user.institutionId;
 
+    const student = await User.findById(studentId).select('department institutionId');
+    const studentDept = student?.department ? student.department.trim().toUpperCase() : '';
+
     // Filter exams by the student's institution
     let query = institutionId ? { institutionId } : {};
+
+    // Filter by department: if exam has a specific department, only students of that department can see it
+    if (studentDept) {
+      query.$or = [
+        { department: 'ALL' },
+        { department: { $exists: false } },
+        { department: null },
+        { department: '' },
+        { department: studentDept }
+      ];
+    } else {
+      query.$or = [
+        { department: 'ALL' },
+        { department: { $exists: false } },
+        { department: null },
+        { department: '' }
+      ];
+    }
 
     // Find all exams the student has already taken
     const takenResults = await Result.find({ studentId }).select('examId');
@@ -171,9 +193,9 @@ const getAllExams = async (req, res) => {
 
     // Fetch exams
     const exams = await Exam.find(query)
-      .select('title subject duration totalMarks startTime endTime passMarks createdAt')
+      .select('title subject department duration totalMarks startTime endTime passMarks createdAt')
       .sort({ createdAt: -1 })
-      .lean(); // Use lean to add properties easily
+      .lean();
 
     // Map to include hasAttempted flag
     const mappedExams = exams.map(exam => ({
@@ -192,6 +214,21 @@ const getExamForStudent = async (req, res) => {
   try {
     const exam = await Exam.findById(req.params.id);
     if (!exam) return res.status(404).json({ message: "Exam not found" });
+
+    // Enforce department access control for students
+    if (req.user.role === 'student') {
+      const student = await User.findById(req.user.id || req.user._id).select('department institutionId');
+      if (exam.institutionId && student?.institutionId && exam.institutionId.toString() !== student.institutionId.toString()) {
+        return res.status(403).json({ message: "Access denied. Exam belongs to a different institution." });
+      }
+      const studentDept = student?.department ? student.department.trim().toUpperCase() : '';
+      const examDept = exam.department ? exam.department.trim().toUpperCase() : 'ALL';
+      if (examDept !== 'ALL' && examDept !== '' && examDept !== studentDept) {
+        return res.status(403).json({
+          message: `Access denied. This exam is designated exclusively for the ${exam.department} department.`
+        });
+      }
+    }
 
     // Aggregate statistics for this exam
     const results = await Result.find({ examId: req.params.id, isMalpractice: false });
@@ -215,7 +252,7 @@ const getExamForStudent = async (req, res) => {
 const updateExam = async (req, res) => {
   try {
     const { id } = req.params;
-    const { title, subject, duration, questions, startTime, endTime, passMarks, cameraMonitoring } = req.body;
+    const { title, subject, duration, questions, startTime, endTime, passMarks, cameraMonitoring, department } = req.body;
 
     const totalMarks = questions ? questions.reduce((sum, q) => sum + (parseInt(q.marks) || 0), 0) : undefined;
 
@@ -228,6 +265,7 @@ const updateExam = async (req, res) => {
     if (endTime) updateFields.endTime = endTime;
     if (passMarks !== undefined) updateFields.passMarks = passMarks;
     if (cameraMonitoring !== undefined) updateFields.cameraMonitoring = cameraMonitoring;
+    if (department !== undefined) updateFields.department = department ? department.trim().toUpperCase() : 'ALL';
 
     const updatedExam = await Exam.findByIdAndUpdate(
       id,

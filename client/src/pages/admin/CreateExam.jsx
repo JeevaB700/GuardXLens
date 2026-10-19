@@ -17,7 +17,8 @@ const CreateExam = () => {
     const [examData, setExamData] = useState({
         title: '', subject: '', duration: 60, questions: [],
         startTime: '', endTime: '', passMarks: 40,
-        cameraMonitoring: true
+        cameraMonitoring: true,
+        department: 'ALL'
     });
 
     const handleInputChange = (e) => setExamData({ ...examData, [e.target.name]: e.target.value });
@@ -236,6 +237,32 @@ const CreateExam = () => {
                                     className="form-control form-control-dark"
                                     placeholder="e.g. Computer Science"
                                 />
+                            </div>
+                            <div className="mb-3">
+                                <label className="form-label text-white-50 small fw-bold text-uppercase d-flex justify-content-between align-items-center">
+                                    <span>Target Department</span>
+                                    <span className="badge bg-primary bg-opacity-25 text-info" style={{ fontSize: '0.65rem' }}>Access Control</span>
+                                </label>
+                                <select
+                                    name="department"
+                                    value={examData.department || 'ALL'}
+                                    onChange={handleInputChange}
+                                    className="form-select form-control-dark"
+                                    style={{ background: 'rgba(15,23,42,0.9)', color: '#fff', borderColor: 'rgba(255,255,255,0.15)' }}
+                                >
+                                    <option value="ALL">All Departments (Entire Institution)</option>
+                                    <option value="IT">IT - Information Technology</option>
+                                    <option value="CSE">CSE - Computer Science & Engineering</option>
+                                    <option value="ECE">ECE - Electronics & Communication</option>
+                                    <option value="MECH">MECH - Mechanical Engineering</option>
+                                    <option value="EEE">EEE - Electrical & Electronics</option>
+                                    <option value="AIDS">AIDS - AI & Data Science</option>
+                                </select>
+                                <small className="text-white-50 d-block mt-1" style={{ fontSize: '0.72rem' }}>
+                                    {examData.department === 'ALL' || !examData.department 
+                                        ? 'Accessible by all registered students of this institution.'
+                                        : `Restricted strictly to ${examData.department} students of this institution.`}
+                                </small>
                             </div>
                             <div className="mb-3">
                                 <label className="form-label text-white-50 small fw-bold text-uppercase">Duration (Mins)</label>

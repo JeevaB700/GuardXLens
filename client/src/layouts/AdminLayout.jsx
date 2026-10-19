@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, FileCheck, Users, PlusCircle, LogOut, Menu, Globe, ChevronRight, ShieldCheck } from 'lucide-react';
+import { LayoutDashboard, FileCheck, Users, PlusCircle, LogOut, Menu, Globe, ChevronRight, ShieldCheck, CalendarRange } from 'lucide-react';
 import { Offcanvas } from 'react-bootstrap';
 
 const NavItem = ({ to, icon: Icon, label, onClick, badge }) => (
@@ -112,6 +112,7 @@ const AdminLayout = () => {
                 <span style={{ fontSize: '0.65rem', fontWeight: 700, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Management</span>
               </li>
               <NavItem to="/institution/dashboard" icon={LayoutDashboard} label="Dashboard" onClick={onNavigate} />
+              <NavItem to="/institution/exam-cell" icon={CalendarRange} label="Exam Cell & Seating" onClick={onNavigate} />
               <NavItem to="/institution/active-exams" icon={FileCheck} label="Active Exams" onClick={onNavigate} />
               <NavItem to="/institution/create-exam" icon={PlusCircle} label="Create Exam" onClick={onNavigate} />
               <NavItem to="/institution/students" icon={Users} label="My Students" onClick={onNavigate} />
